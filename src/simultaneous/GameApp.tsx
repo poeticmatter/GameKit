@@ -82,7 +82,8 @@ function AsyncMatch<Settings, State extends TurnBasedState, Plan extends TurnPla
   props: RoomProps<Settings, State, Plan> & { settings: Settings | null },
 ) {
   const { config, game, room, settings } = props
-  const slot = recallSlot(config.id, room.code)
+  // Read once: a player's slot must not change mid-game, even if storage does.
+  const [slot] = useState(() => recallSlot(config.id, room.code))
   const connection = useAsyncMatch({ config, roomCode: room.code, slot, rules: game.rules, settings })
   return <MatchScreen {...props} connection={connection} />
 }
