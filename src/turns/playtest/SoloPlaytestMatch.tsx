@@ -1,7 +1,7 @@
 import { returnToLobby } from '../../core/screens'
 import { PLAYED_SEAT_LOOK } from '../../core/seatDisguise'
 import type { GameModule } from '../types'
-import { NextTurnScreen, PlaytestErrorBoundary, TableOverBar } from './screens'
+import { NextTurnScreen, PlaytestBar, PlaytestErrorBoundary, TableOverBar } from './screens'
 import type { SoloPlaytest } from './session'
 import { forgetPlaytest } from './storage'
 import { PlaytestSummaryScreen } from './SummaryScreen'
@@ -27,13 +27,15 @@ function PlaytestScreens<Settings, State, Move>({ gameId, game, initialSession }
     playtest.showSummary()
   }
 
+  const quit = () => endPlaytest(gameId)
+
   if (playtest.summary) {
     return (
       <PlaytestSummaryScreen
         summary={playtest.summary}
         appearanceOf={game.playerAppearance}
         onKeepPlaying={dealNextTurn}
-        onEnd={() => endPlaytest(gameId)}
+        onEnd={quit}
       />
     )
   }
@@ -44,26 +46,26 @@ function PlaytestScreens<Settings, State, Move>({ gameId, game, initialSession }
         strategyNote={playtest.strategyNote}
         onReady={dealNextTurn}
         onShowSummary={showSummary}
+        onQuit={quit}
       />
     )
   }
-  // Remount per deal so no in-progress selection carries over to another seat or table.
-  const board = (
-    <game.Board
-      key={playtest.dealCount}
-      state={playtest.state}
-      role={playtest.role}
-      players={playtest.players}
-      onMove={playtest.submitMove}
-      seating="hot_seat"
-      lookOf={playtest.lookOf}
-    />
-  )
-  if (playtest.stage === 'playing') return board
   return (
     <>
-      {board}
-      <TableOverBar openTableCount={playtest.openTableCount} onNextTurn={dealNextTurn} onShowSummary={showSummary} />
+      <PlaytestBar onQuit={quit} />
+      {/* Remount per deal so no in-progress selection carries over to another seat or table. */}
+      <game.Board
+        key={playtest.dealCount}
+        state={playtest.state}
+        role={playtest.role}
+        players={playtest.players}
+        onMove={playtest.submitMove}
+        seating="hot_seat"
+        lookOf={playtest.lookOf}
+      />
+      {playtest.stage === 'table_over' && (
+        <TableOverBar openTableCount={playtest.openTableCount} onNextTurn={dealNextTurn} onShowSummary={showSummary} />
+      )}
     </>
   )
 }

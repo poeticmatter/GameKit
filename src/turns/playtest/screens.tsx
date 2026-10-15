@@ -10,6 +10,25 @@ export function countOf(count: number, noun: string): string {
 
 const TEXT_LINK_CLASSES = 'text-xs font-semibold text-ink-soft underline hover:text-ink'
 
+const QUIT_CONFIRMATION = 'Quit this playtest? Every table in it will be discarded.'
+
+/** Asks before throwing the playtest away, since it can't be got back. */
+function confirmQuit(onQuit: () => void) {
+  if (window.confirm(QUIT_CONFIRMATION)) onQuit()
+}
+
+/** Sits above a hot-seat table so the tester can leave the playtest at any point. */
+export function PlaytestBar({ onQuit }: { onQuit: () => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-rule bg-paper px-4 py-2 text-sm">
+      <span className="font-semibold text-ink-soft">Hot-seat playtest</span>
+      <Button tone="secondary" className="px-3 py-1.5 text-sm" onClick={() => confirmQuit(onQuit)}>
+        Quit
+      </Button>
+    </div>
+  )
+}
+
 export function StrategyNote({ note, label }: { note: string; label: string }) {
   return (
     <Card className="w-full text-left">
@@ -28,11 +47,13 @@ export function NextTurnScreen({
   strategyNote,
   onReady,
   onShowSummary,
+  onQuit,
 }: {
   appearance: PlayerAppearance
   strategyNote: string
   onReady: () => void
   onShowSummary: () => void
+  onQuit: () => void
 }) {
   return (
     <CenteredScreen>
@@ -50,6 +71,9 @@ export function NextTurnScreen({
       </Button>
       <button type="button" onClick={onShowSummary} className={TEXT_LINK_CLASSES}>
         Summary so far
+      </button>
+      <button type="button" onClick={() => confirmQuit(onQuit)} className={TEXT_LINK_CLASSES}>
+        Quit playtest
       </button>
     </CenteredScreen>
   )

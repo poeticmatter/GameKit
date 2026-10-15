@@ -63,7 +63,7 @@ In turn-based games, hot seat is built for playtesting alone, so it keeps the te
 - The seat being played always looks like seat 0, and the other seats' looks are shuffled, so the tester is the same colour every turn. A finished table shows its real seats.
 - An optional **strategy** note, written in the lobby, is shown before every turn: one way of playing (a personality) to apply to every seat.
 - The **summary**, open from any "Next turn" screen and offered when the last table ends, repeats the strategy and lists each table's seats in the order they first took a turn, with scores and winners. Across finished tables it counts wins by turn position, which shows a first-player advantage even when the game picks the first player at random.
-- The playtest is saved in the browser after every change, so a reload carries on. Ending it from the summary discards it. If a saved playtest no longer works after the game's code changes, the kit offers to discard it.
+- The playtest is saved in the browser after every change, so a reload carries on. Ending it from the summary, or quitting it at any point (Quit sits above every table and on each "Next turn" screen, and asks first), discards it and returns to the lobby. If a saved playtest no longer works after the game's code changes, the kit offers to discard it.
 
 Winners and scores come from the optional `GameRules.outcome(state)`, called only once `activePlayer` is null; without it the summary still shows turn order. Game states are saved as JSON, which they already must be for async play.
 

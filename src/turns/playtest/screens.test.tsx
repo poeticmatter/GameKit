@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { NextTurnScreen, TableOverBar } from './screens'
+import { NextTurnScreen, PlaytestBar, TableOverBar } from './screens'
 import type { PlaytestSummary } from './summary'
 import { PlaytestSummaryScreen } from './SummaryScreen'
 
@@ -32,14 +32,25 @@ function renderSummary(overrides: Partial<PlaytestSummary> = {}): string {
 
 describe('next turn screen', () => {
   it('names the colour the tester plays', () => {
-    expect(renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="" onReady={ignore} onShowSummary={ignore} />)).toContain(
+    expect(renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="" onReady={ignore} onShowSummary={ignore} onQuit={ignore} />)).toContain(
       'Red',
     )
   })
 
   it('reminds the tester of their strategy', () => {
-    const html = renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="Hoard wood" onReady={ignore} onShowSummary={ignore} />)
+    const html = renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="Hoard wood" onReady={ignore} onShowSummary={ignore} onQuit={ignore} />)
     expect(html).toContain('Hoard wood')
+  })
+
+  it('lets the tester quit the playtest', () => {
+    const html = renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="" onReady={ignore} onShowSummary={ignore} onQuit={ignore} />)
+    expect(html).toContain('Quit playtest')
+  })
+})
+
+describe('playtest bar', () => {
+  it('offers to quit the playtest during a turn', () => {
+    expect(renderToStaticMarkup(<PlaytestBar onQuit={ignore} />)).toContain('Quit')
   })
 })
 
