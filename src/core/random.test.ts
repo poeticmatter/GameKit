@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { nextIndex, nextRandom } from './random'
+import { nextIndex, nextRandom, shuffled } from './random'
 
 function sequence(seed: number, length: number): number[] {
   const values: number[] = []
@@ -33,5 +33,24 @@ describe('seeded random', () => {
       return index
     })
     expect(new Set(indexes)).toEqual(new Set([0, 1, 2, 3, 4, 5]))
+  })
+})
+
+describe('seeded shuffle', () => {
+  const cards = ['a', 'b', 'c', 'd', 'e', 'f']
+
+  it('keeps every item exactly once', () => {
+    expect([...shuffled(cards, 5).items].sort()).toEqual(cards)
+  })
+
+  it('reorders the items', () => {
+    const orders = new Set([1, 2, 3, 4, 5].map(seed => shuffled(cards, seed).items.join('')))
+    expect(orders.size).toBeGreaterThan(1)
+  })
+
+  it('leaves the original alone', () => {
+    const original = [...cards]
+    shuffled(original, 5)
+    expect(original).toEqual(cards)
   })
 })

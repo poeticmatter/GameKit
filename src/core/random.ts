@@ -26,3 +26,15 @@ export function nextIndex(state: number, count: number): { index: number; nextSt
   const { value, nextState } = nextRandom(state)
   return { index: Math.floor(value * count), nextState }
 }
+
+/** A copy of `items` in random order (Fisher–Yates). */
+export function shuffled<T>(items: readonly T[], state: number): { items: T[]; nextState: number } {
+  const result = [...items]
+  let randomState = state
+  for (let last = result.length - 1; last > 0; last--) {
+    const draw = nextIndex(randomState, last + 1)
+    randomState = draw.nextState
+    ;[result[last], result[draw.index]] = [result[draw.index], result[last]]
+  }
+  return { items: result, nextState: randomState }
+}

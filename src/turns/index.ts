@@ -6,6 +6,7 @@ export { IllegalMoveError } from './IllegalMoveError'
 export type {
   BoardProps,
   GameModule,
+  GameOutcome,
   GameRules,
   MatchSetup,
   PlayerAppearance,

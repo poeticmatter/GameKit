@@ -1,0 +1,67 @@
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import type { GameModule, PlayerIndex, PlayerProfile, UserRole } from '../types'
+import { dealNextTurn, openTableCountOf, playSoloMove, showSummary, type SoloPlaytest, type SoloStage } from './session'
+import { savePlaytest } from './storage'
+import { summarizePlaytest, type PlaytestSummary } from './summary'
+
+export interface SoloPlaytestView<State, Move> {
+  stage: SoloStage
+  /** The table on screen. */
+  state: State
+  role: UserRole
+  /** Named after the look each seat wears, so names never give a seat away. */
+  players: PlayerProfile[]
+  lookOf: (seat: PlayerIndex) => PlayerIndex
+  dealCount: number
+  openTableCount: number
+  strategyNote: string
+  /** Non-null only while the stage is 'summary'. */
+  summary: PlaytestSummary | null
+  submitMove: (move: Move) => void
+  dealNextTurn: () => void
+  showSummary: () => void
+}
+
+interface SoloPlaytestOptions<Settings, State, Move> {
+  game: Pick<GameModule<Settings, State, Move>, 'rules' | 'playerAppearance'>
+  gameId: string
+  initialSession: SoloPlaytest<State>
+}
+
+/** Runs a hot-seat playtest, saving it after every change so a reload resumes it. */
+export function useSoloPlaytest<Settings, State, Move>({
+  game: { rules, playerAppearance },
+  gameId,
+  initialSession,
+}: SoloPlaytestOptions<Settings, State, Move>): SoloPlaytestView<State, Move> {
+  const [session, setSession] = useState(initialSession)
+
+  useEffect(() => savePlaytest(gameId, session), [gameId, session])
+
+  const submitMove = useCallback((move: Move) => setSession(current => playSoloMove(rules, current, move)), [rules])
+  const deal = useCallback(() => setSession(current => dealNextTurn(rules, current)), [rules])
+  const summarize = useCallback(() => setSession(showSummary), [])
+
+  const { looks } = session
+  // Seats beyond the table aren't in play, so they keep their own look.
+  const lookOf = useCallback((seat: PlayerIndex) => looks[seat] ?? seat, [looks])
+  const players = useMemo(() => looks.map(look => ({ name: playerAppearance(look).name })), [looks, playerAppearance])
+  const summary = useMemo(() => (session.stage === 'summary' ? summarizePlaytest(rules, session) : null), [rules, session])
+
+  const state = session.tables[session.tableIndex].state
+  const activeSeat = rules.activePlayer(state)
+  return {
+    stage: session.stage,
+    state,
+    role: session.stage === 'playing' && activeSeat !== null ? activeSeat : 'spectator',
+    players,
+    lookOf,
+    dealCount: session.dealCount,
+    openTableCount: openTableCountOf(rules, session),
+    strategyNote: session.strategyNote,
+    summary,
+    submitMove,
+    dealNextTurn: deal,
+    showSummary: summarize,
+  }
+}

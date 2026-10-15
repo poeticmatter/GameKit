@@ -54,6 +54,21 @@ test: { server: { deps: { inline: ['game-kit'] } } },   // with defineConfig fro
 
 The Supabase table each mode expects is defined by the matching template's `supabase/migrations/`.
 
+## Hot seat is a solo playtest
+
+In turn-based games, hot seat is built for playtesting alone, so it keeps the tester from carrying a plan from one turn to the next. (Simultaneous games still pass one device between two players.)
+
+- The lobby asks for 1–4 **tables**: separate games with the same settings and player count, each with its own seed.
+- After every turn a "Next turn" screen hides the board, then deals the tester into a random unfinished table, sometimes the same one again.
+- The seat being played always looks like seat 0, and the other seats' looks are shuffled, so the tester is the same colour every turn. A finished table shows its real seats.
+- An optional **strategy** note, written in the lobby, is shown before every turn: one way of playing (a personality) to apply to every seat.
+- The **summary**, open from any "Next turn" screen and offered when the last table ends, repeats the strategy and lists each table's seats in the order they first took a turn, with scores and winners. Across finished tables it counts wins by turn position, which shows a first-player advantage even when the game picks the first player at random.
+- The playtest is saved in the browser after every change, so a reload carries on. Ending it from the summary discards it. If a saved playtest no longer works after the game's code changes, the kit offers to discard it.
+
+Winners and scores come from the optional `GameRules.outcome(state)`, called only once `activePlayer` is null; without it the summary still shows turn order. Game states are saved as JSON, which they already must be for async play.
+
+A board takes part through `BoardProps.lookOf`: draw every seat-coloured thing (pieces, swatches, colour names) with `lookOf(seat)` instead of `seat`, and take names from `players`, which hot seat names after each seat's look. Online, `lookOf(seat)` is just `seat`. Anything else ordered by seat, such as a scoreboard in seat order, still gives the seat away; list players starting from the viewer's seat instead.
+
 ## Developing
 
 ```bash

@@ -64,6 +64,9 @@ export function SegmentedControl<Value extends string | number>({
   )
 }
 
+const FIELD_CLASSES =
+  'w-full rounded-lg border border-rule bg-paper px-3 py-2 text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none'
+
 interface TextInputProps {
   value: string
   onChange: (value: string) => void
@@ -79,7 +82,20 @@ export function TextInput({ value, onChange, placeholder, maxLength }: TextInput
       placeholder={placeholder}
       maxLength={maxLength}
       onChange={event => onChange(event.target.value)}
-      className="w-full rounded-lg border border-rule bg-paper px-3 py-2 text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none"
+      className={FIELD_CLASSES}
+    />
+  )
+}
+
+export function TextArea({ value, onChange, placeholder, maxLength }: TextInputProps) {
+  return (
+    <textarea
+      value={value}
+      placeholder={placeholder}
+      maxLength={maxLength}
+      rows={3}
+      onChange={event => onChange(event.target.value)}
+      className={`${FIELD_CLASSES} resize-y`}
     />
   )
 }

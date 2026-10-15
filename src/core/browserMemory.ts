@@ -1,5 +1,5 @@
-// What a browser remembers between visits: its seat in each room and the name it plays
-// under. Storage can be unavailable (private windows, blocked site data), so reads fall
+// What a browser remembers between visits: its seat in each room, the name it plays
+// under, and any hot-seat playtest in progress. Storage can be unavailable (private windows, blocked site data), so reads fall
 // back to "nothing remembered" and writes are best effort; both log why.
 
 export const MAX_PLAYER_NAME_LENGTH = 24
@@ -18,6 +18,14 @@ export function writeStored(key: string, value: string): void {
     localStorage.setItem(key, value)
   } catch (err) {
     console.warn(`Could not save ${key} to localStorage; it won't be remembered after a reload.`, err)
+  }
+}
+
+export function removeStored(key: string): void {
+  try {
+    localStorage.removeItem(key)
+  } catch (err) {
+    console.warn(`Could not remove ${key} from localStorage; it may come back after a reload.`, err)
   }
 }
 

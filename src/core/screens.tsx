@@ -3,7 +3,7 @@ import { Button, Card, FieldLabel, SegmentedControl } from './controls'
 import type { GameConfig } from './config'
 import { buildRoomUrl, type PlayMode, type RoomLink } from './roomLink'
 
-function returnToLobby() {
+export function returnToLobby() {
   window.location.href = window.location.pathname
 }
 
@@ -68,7 +68,7 @@ const PLAY_MODE_TEXT: Record<PlayMode, { label: string; description: string }> =
   },
   hot_seat: {
     label: 'Hot Seat',
-    description: 'Everyone shares this device and passes it round. Nothing is saved online.',
+    description: 'Every seat is played on this device. Nothing is saved online.',
   },
 }
 

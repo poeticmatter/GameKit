@@ -3,20 +3,23 @@ import { rememberPlayerName } from '../core/browserMemory'
 import type { GameConfig } from '../core/config'
 import { buildRoomUrl, generateRoomCode, generateSeed, readRoomLinkFromUrl, type RoomLink } from '../core/roomLink'
 import { ProgressScreen, StatusScreen } from '../core/screens'
+import { undisguised } from '../core/seatDisguise'
 import { useTurnTitle } from '../core/useTurnTitle'
 import { Lobby, type MatchRequest } from './Lobby'
+import { startSoloPlaytest, type SoloPlaytest } from './playtest/session'
+import { SoloPlaytestMatch } from './playtest/SoloPlaytestMatch'
+import { loadPlaytest } from './playtest/storage'
 import { JoinScreen, WaitingForPlayersScreen } from './screens'
 import { rememberRole } from './seats'
 import type { GameModule, MatchConnection, MatchSetup, NewMatch } from './types'
 import { useAsyncMatch } from './useAsyncMatch'
-import { useHotSeatMatch } from './useHotSeatMatch'
 import { usePeerGuest } from './usePeerGuest'
 import { usePeerHost } from './usePeerHost'
 
 /**
  * A whole turn-based game app: the lobby, then a match over whichever transport was
  * chosen, ending at the game's own Board. Routes on the URL (`?room=CODE[&mode=async]`);
- * hot-seat matches have no URL.
+ * hot-seat playtests have no URL and resume from this browser's storage instead.
  */
 
 interface AppProps<Settings, State, Move> {
@@ -51,7 +54,16 @@ function MatchScreen<Settings, State, Move>({
   if (seatChoice) return <JoinScreen gameId={config.id} seatChoice={seatChoice} {...seats} />
   if (status === 'waiting_for_players') return <WaitingForPlayersScreen room={room} {...seats} />
 
-  return <game.Board state={state} role={connection.role} players={players} onMove={connection.submitMove} seating="remote" />
+  return (
+    <game.Board
+      state={state}
+      role={connection.role}
+      players={players}
+      onMove={connection.submitMove}
+      seating="remote"
+      lookOf={undisguised}
+    />
+  )
 }
 
 function AsyncMatch<Settings, State, Move>(props: RoomProps<Settings, State, Move> & { newMatch: NewMatch<Settings, State> | null }) {
@@ -71,20 +83,6 @@ function LiveGuestMatch<Settings, State, Move>(props: RoomProps<Settings, State,
   return <MatchScreen {...props} connection={connection} />
 }
 
-function HotSeatMatch<Settings, State, Move>({ game, setup }: { game: GameModule<Settings, State, Move>; setup: MatchSetup<Settings> }) {
-  const connection = useHotSeatMatch(game.rules, setup)
-  if (!connection.state) return <ProgressScreen title="Starting…" />
-  return (
-    <game.Board
-      state={connection.state}
-      role={connection.role}
-      players={connection.players}
-      onMove={connection.submitMove}
-      seating="hot_seat"
-    />
-  )
-}
-
 interface ActiveRoom<Settings, State> {
   link: RoomLink
   /** Present only in the tab that created the room. */
@@ -96,18 +94,23 @@ export function TurnBasedGameApp<Settings, State, Move>({ config, game }: AppPro
     const link = readRoomLinkFromUrl()
     return link ? { link, newMatch: null } : null
   })
-  // Hot-seat matches live only in memory: they have no room and no URL to share or resume.
-  const [hotSeatSetup, setHotSeatSetup] = useState<MatchSetup<Settings> | null>(null)
+  // Hot-seat playtests have no room or URL; the one in progress is kept in this browser.
+  const [playtest, setPlaytest] = useState<SoloPlaytest<State> | null>(() =>
+    readRoomLinkFromUrl() ? null : loadPlaytest<State>(config.id),
+  )
 
   const createMatch = useCallback(
-    ({ settings, playerCount, mode, hostName }: MatchRequest<Settings>) => {
-      const setup: MatchSetup<Settings> = { settings, playerCount, seed: generateSeed() }
+    ({ settings, playerCount, mode, hostName, tableCount, strategyNote }: MatchRequest<Settings>) => {
+      // Same settings everywhere; only the seed differs, so each table deals out differently.
+      const newSetup = (): MatchSetup<Settings> => ({ settings, playerCount, seed: generateSeed() })
       // The Create button sits at the bottom of the lobby; start the match at the top.
       window.scrollTo(0, 0)
       if (mode === 'hot_seat') {
-        setHotSeatSetup(setup)
+        const setups = Array.from({ length: tableCount }, newSetup)
+        setPlaytest(startSoloPlaytest(game.rules, { setups, strategyNote, randomState: generateSeed() }))
         return
       }
+      const setup = newSetup()
       const link: RoomLink = { code: generateRoomCode(), transport: mode }
       rememberRole(config.id, link.code, 0)
       rememberPlayerName(config.id, hostName)
@@ -117,7 +120,7 @@ export function TurnBasedGameApp<Settings, State, Move>({ config, game }: AppPro
     [config.id, game.rules],
   )
 
-  if (hotSeatSetup) return <HotSeatMatch game={game} setup={hotSeatSetup} />
+  if (playtest) return <SoloPlaytestMatch gameId={config.id} game={game} initialSession={playtest} />
   if (!room) return <Lobby config={config} game={game} onCreateMatch={createMatch} />
 
   const roomProps = { config, game, room: room.link }
