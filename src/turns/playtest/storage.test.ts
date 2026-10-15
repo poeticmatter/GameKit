@@ -12,6 +12,11 @@ describe('saved playtests', () => {
     expect(parsePlaytest(serializePlaytest(session))).toEqual(session)
   })
 
+  it('keep moves not yet ended', () => {
+    const session = playThrough(startTally([0, 1]), ['add', 'pass', 'add'])
+    expect(parsePlaytest(serializePlaytest(session))).toEqual(session)
+  })
+
   it('are absent when nothing was saved', () => {
     expect(parsePlaytest(null)).toBeNull()
   })

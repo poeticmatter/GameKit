@@ -1,6 +1,7 @@
+import type { ComponentProps } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { NextTurnScreen, PlaytestBar, TableOverBar } from './screens'
+import { PlaytestBar, TableOverBar, type TurnControls } from './screens'
 import type { PlaytestSummary } from './summary'
 import { PlaytestSummaryScreen } from './SummaryScreen'
 
@@ -30,27 +31,43 @@ function renderSummary(overrides: Partial<PlaytestSummary> = {}): string {
   )
 }
 
-describe('next turn screen', () => {
+const turn: TurnControls = { appearance: appearanceOf(0), canUndo: false, canEndTurn: false, onUndo: ignore, onEndTurn: ignore }
+
+function renderBar(overrides: Partial<ComponentProps<typeof PlaytestBar>> = {}): string {
+  return renderToStaticMarkup(<PlaytestBar turn={turn} strategyNote="" onShowSummary={null} onQuit={ignore} {...overrides} />)
+}
+
+describe('playtest bar', () => {
   it('names the colour the tester plays', () => {
-    expect(renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="" onReady={ignore} onShowSummary={ignore} onQuit={ignore} />)).toContain(
-      'Red',
-    )
+    expect(renderBar()).toContain('Red')
   })
 
   it('reminds the tester of their strategy', () => {
-    const html = renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="Hoard wood" onReady={ignore} onShowSummary={ignore} onQuit={ignore} />)
-    expect(html).toContain('Hoard wood')
+    expect(renderBar({ strategyNote: 'Hoard wood' })).toContain('Hoard wood')
+  })
+
+  it('offers to end the turn once it has passed', () => {
+    expect(renderBar({ turn: { ...turn, canEndTurn: true } })).toMatch(/<button(?![^>]*disabled="")[^>]*>End turn</)
+  })
+
+  it('holds back ending the turn while the seat can still move', () => {
+    expect(renderBar()).toMatch(/<button[^>]*disabled=""[^>]*>End turn</)
+  })
+
+  it('holds back undo before any move', () => {
+    expect(renderBar()).toMatch(/<button[^>]*disabled=""[^>]*>Undo</)
+  })
+
+  it('offers the summary when it can be opened', () => {
+    expect(renderBar({ onShowSummary: ignore })).toContain('Summary so far')
+  })
+
+  it('leaves out the turn controls once the table is over', () => {
+    expect(renderBar({ turn: null })).not.toContain('End turn')
   })
 
   it('lets the tester quit the playtest', () => {
-    const html = renderToStaticMarkup(<NextTurnScreen appearance={appearanceOf(0)} strategyNote="" onReady={ignore} onShowSummary={ignore} onQuit={ignore} />)
-    expect(html).toContain('Quit playtest')
-  })
-})
-
-describe('playtest bar', () => {
-  it('offers to quit the playtest during a turn', () => {
-    expect(renderToStaticMarkup(<PlaytestBar onQuit={ignore} />)).toContain('Quit')
+    expect(renderBar()).toContain('Quit')
   })
 })
 

@@ -1,7 +1,7 @@
 import { returnToLobby } from '../../core/screens'
 import { PLAYED_SEAT_LOOK } from '../../core/seatDisguise'
 import type { GameModule } from '../types'
-import { NextTurnScreen, PlaytestBar, PlaytestErrorBoundary, TableOverBar } from './screens'
+import { PlaytestBar, PlaytestErrorBoundary, TableOverBar, type TurnControls } from './screens'
 import type { SoloPlaytest } from './session'
 import { forgetPlaytest } from './storage'
 import { PlaytestSummaryScreen } from './SummaryScreen'
@@ -16,10 +16,15 @@ interface PlaytestProps<Settings, State, Move> {
 function PlaytestScreens<Settings, State, Move>({ gameId, game, initialSession }: PlaytestProps<Settings, State, Move>) {
   const playtest = useSoloPlaytest({ game, gameId, initialSession })
 
+  // Every deal is a new seat, maybe at another table: start reading it from the top.
   function dealNextTurn() {
-    // Every deal is a new seat, maybe at another table: start reading it from the top.
     window.scrollTo(0, 0)
     playtest.dealNextTurn()
+  }
+
+  function endTurn() {
+    window.scrollTo(0, 0)
+    playtest.endTurn()
   }
 
   function showSummary() {
@@ -39,20 +44,25 @@ function PlaytestScreens<Settings, State, Move>({ gameId, game, initialSession }
       />
     )
   }
-  if (playtest.stage === 'between_turns') {
-    return (
-      <NextTurnScreen
-        appearance={game.playerAppearance(PLAYED_SEAT_LOOK)}
-        strategyNote={playtest.strategyNote}
-        onReady={dealNextTurn}
-        onShowSummary={showSummary}
-        onQuit={quit}
-      />
-    )
-  }
+
+  const isTableOver = playtest.stage === 'table_over'
+  const turn: TurnControls | null = isTableOver
+    ? null
+    : {
+        appearance: game.playerAppearance(PLAYED_SEAT_LOOK),
+        canUndo: playtest.canUndo,
+        canEndTurn: playtest.stage === 'turn_over',
+        onUndo: playtest.undoMove,
+        onEndTurn: endTurn,
+      }
   return (
     <>
-      <PlaytestBar onQuit={quit} />
+      <PlaytestBar
+        turn={turn}
+        strategyNote={playtest.strategyNote}
+        onShowSummary={playtest.canShowSummary && !isTableOver ? showSummary : null}
+        onQuit={quit}
+      />
       {/* Remount per deal so no in-progress selection carries over to another seat or table. */}
       <game.Board
         key={playtest.dealCount}
@@ -63,7 +73,7 @@ function PlaytestScreens<Settings, State, Move>({ gameId, game, initialSession }
         seating="hot_seat"
         lookOf={playtest.lookOf}
       />
-      {playtest.stage === 'table_over' && (
+      {isTableOver && (
         <TableOverBar openTableCount={playtest.openTableCount} onNextTurn={dealNextTurn} onShowSummary={showSummary} />
       )}
     </>

@@ -1,6 +1,6 @@
 import { IllegalMoveError } from '../IllegalMoveError'
 import type { GameRules, MatchSetup } from '../types'
-import { dealNextTurn, playSoloMove, startSoloPlaytest, type SoloPlaytest } from './session'
+import { dealNextTurn, endSoloTurn, playSoloMove, startSoloPlaytest, type SoloPlaytest } from './session'
 
 // A tiny game for the playtest tests. The active player may add 1 to their tally as often
 // as they like, then pass to the next seat. The seed picks who starts. The table is over
@@ -39,7 +39,10 @@ export function startTally(firstSeats: number[], strategyNote = ''): SoloPlaytes
   return startSoloPlaytest(tallyRules, { setups: tallySetups(firstSeats), strategyNote, randomState: 7 })
 }
 
-/** Plays each move in turn, taking every deal offered in between. */
+/** Plays each move in turn, ending every turn that passes and taking every deal offered. */
 export function playThrough(session: SoloPlaytest<TallyState>, moves: TallyMove[]): SoloPlaytest<TallyState> {
-  return moves.reduce((current, move) => playSoloMove(tallyRules, dealNextTurn(tallyRules, current), move), session)
+  return moves.reduce(
+    (current, move) => endSoloTurn(tallyRules, playSoloMove(tallyRules, dealNextTurn(tallyRules, current), move)),
+    session,
+  )
 }

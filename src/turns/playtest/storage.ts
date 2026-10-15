@@ -5,9 +5,10 @@ import type { SoloPlaytest, SoloStage } from './session'
 // carries on where it left off. Game states go in as JSON, as they already do for async
 // play.
 
-const FORMAT_VERSION = 1
+// Version 2 added undo (`turnStates`) and dropped the screen between turns.
+const FORMAT_VERSION = 2
 
-const STAGES: readonly SoloStage[] = ['between_turns', 'playing', 'table_over', 'summary']
+const STAGES: readonly SoloStage[] = ['playing', 'turn_over', 'table_over', 'summary']
 
 const playtestKey = (gameId: string) => `${gameId}-playtest`
 
@@ -29,12 +30,14 @@ function isSavedTable(value: unknown, seatCount: number): boolean {
 
 function isSavedSession(value: unknown): value is SoloPlaytest<unknown> {
   if (!isRecord(value)) return false
-  const { tables, tableIndex, seatCount, looks, stage, dealCount, randomState, strategyNote } = value
+  const { tables, tableIndex, turnStates, seatCount, looks, stage, dealCount, randomState, strategyNote } = value
   if (typeof seatCount !== 'number' || !Array.isArray(tables)) return false
   return (
     tables.length > 0 &&
     tables.every(table => isSavedTable(table, seatCount)) &&
     isIndexBelow(tableIndex, tables.length) &&
+    Array.isArray(turnStates) &&
+    turnStates.length > 0 &&
     isSeatList(looks, seatCount) &&
     STAGES.some(known => known === stage) &&
     Number.isInteger(dealCount) &&

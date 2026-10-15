@@ -8,22 +8,24 @@ import type { GameRules, MatchSetup, PlayerIndex } from '../types'
  * game, on one device, with nothing saved online.
  *
  * Each turn should be a fresh read of a board, not the continuation of a plan, so the
- * tester never knows where they're about to sit. After every turn they're dealt into a
- * random unfinished table, sometimes the same one again, and the seat they play is
- * disguised as the first seat while the others' looks are shuffled. A finished table
- * shows its real seats.
+ * tester never knows where they're about to sit. Once they end a turn they're dealt
+ * straight into a random unfinished table, sometimes the same one again, and the seat
+ * they play is disguised as the first seat while the others' looks are shuffled. Moves
+ * can be undone until the turn is ended. A finished table shows its real seats.
  */
 
 export type SoloStage =
-  /** The board is hidden until the tester is ready for the next deal. */
-  | 'between_turns'
+  /** The tester moves for the seat they were dealt. */
   | 'playing'
+  /** The dealt seat's turn has passed; the tester can still undo it before ending it. */
+  | 'turn_over'
   /** The table on screen just finished and is shown undisguised. */
   | 'table_over'
-  /** The results so far. Reached between turns, so no turn is left half-played. */
+  /** The results so far. Never opened mid-turn, so no turn is left half-played. */
   | 'summary'
 
 export interface PlaytestTable<State> {
+  /** As of the last ended turn. */
   state: State
   /** Seats in the order they first took a turn here, i.e. by turn position. */
   turnOrder: PlayerIndex[]
@@ -35,6 +37,12 @@ export interface SoloPlaytest<State> {
   tables: PlaytestTable<State>[]
   /** The table on screen. */
   tableIndex: number
+  /**
+   * The table on screen as it was dealt, then after each move since. The last is what the
+   * board shows; the table itself only takes it when the turn is ended, so moves can be
+   * undone until then.
+   */
+  turnStates: State[]
   seatCount: number
   /** `looks[seat]` is the seat whose look that seat is drawn with at the table on screen. */
   looks: PlayerIndex[]
@@ -73,12 +81,42 @@ function withTurnTaker(turnOrder: PlayerIndex[], seat: PlayerIndex | null): Play
   return seat === null || turnOrder.includes(seat) ? turnOrder : [...turnOrder, seat]
 }
 
+function isMidTurn<State>(session: SoloPlaytest<State>): boolean {
+  return session.stage === 'playing' || session.stage === 'turn_over'
+}
+
+/** The table on screen as the board shows it, including moves not yet ended. */
+export function stateOnScreen<State>(session: SoloPlaytest<State>): State {
+  return session.turnStates[session.turnStates.length - 1]
+}
+
+/**
+ * The seat the tester was dealt, or null between turns. It stays theirs once its turn
+ * has passed, so the board keeps showing the table from that seat until the turn ends.
+ */
+export function dealtSeatOf<Settings, State, Move>(
+  rules: GameRules<Settings, State, Move>,
+  session: SoloPlaytest<State>,
+): PlayerIndex | null {
+  return isMidTurn(session) ? rules.activePlayer(session.turnStates[0]) : null
+}
+
+function hasMovesThisDeal<State>(session: SoloPlaytest<State>): boolean {
+  return session.turnStates.length > 1
+}
+
 /** Moves the tester to a random unfinished table, which may be the one they just left. */
 export function dealNextTurn<Settings, State, Move>(
   rules: GameRules<Settings, State, Move>,
   session: SoloPlaytest<State>,
 ): SoloPlaytest<State> {
-  if (session.stage === 'playing') return session
+  return isMidTurn(session) ? session : dealAnyTable(rules, session)
+}
+
+function dealAnyTable<Settings, State, Move>(
+  rules: GameRules<Settings, State, Move>,
+  session: SoloPlaytest<State>,
+): SoloPlaytest<State> {
   const openSeats = openSeatsOf(rules, session.tables)
   if (openSeats.length === 0) return session
 
@@ -88,6 +126,7 @@ export function dealNextTurn<Settings, State, Move>(
   return {
     ...session,
     tableIndex,
+    turnStates: [session.tables[tableIndex].state],
     looks: disguise.looks,
     stage: 'playing',
     dealCount: session.dealCount + 1,
@@ -105,12 +144,13 @@ export function startSoloPlaytest<Settings, State, Move>(
     const state = rules.createInitialState(setup)
     return { state, turnOrder: withTurnTaker([], rules.activePlayer(state)), turnCount: 0 }
   })
-  return dealNextTurn(rules, {
+  return dealAnyTable(rules, {
     tables,
     tableIndex: 0,
+    turnStates: [tables[0].state],
     seatCount,
     looks: undisguisedLooks(seatCount),
-    stage: 'between_turns',
+    stage: 'playing',
     dealCount: 0,
     randomState,
     strategyNote,
@@ -119,7 +159,7 @@ export function startSoloPlaytest<Settings, State, Move>(
 
 /**
  * Applies the move at the table on screen. The tester stays there while the same seat
- * keeps moving, and is taken off the board once the turn passes or the table finishes.
+ * keeps moving; once the turn passes they can undo or end it, but not move again.
  */
 export function playSoloMove<Settings, State, Move>(
   rules: GameRules<Settings, State, Move>,
@@ -127,24 +167,57 @@ export function playSoloMove<Settings, State, Move>(
   move: Move,
 ): SoloPlaytest<State> {
   if (session.stage !== 'playing') return session
-  const table = session.tables[session.tableIndex]
-  const seat = rules.activePlayer(table.state)
+  const state = stateOnScreen(session)
+  const seat = rules.activePlayer(state)
   if (seat === null) return session
-  const nextState = applyPlayerMove(rules, table.state, seat, move)
+  const nextState = applyPlayerMove(rules, state, seat, move)
   if (nextState === null) return session
 
-  const nextSeat = rules.activePlayer(nextState)
-  const isTurnOver = nextSeat !== seat
-  const nextTable: PlaytestTable<State> = isTurnOver
-    ? { state: nextState, turnOrder: withTurnTaker(table.turnOrder, nextSeat), turnCount: table.turnCount + 1 }
-    : { ...table, state: nextState }
-  const tables = session.tables.map((current, index) => (index === session.tableIndex ? nextTable : current))
+  const isTurnOver = rules.activePlayer(nextState) !== seat
+  return { ...session, turnStates: [...session.turnStates, nextState], stage: isTurnOver ? 'turn_over' : 'playing' }
+}
 
-  if (!isTurnOver) return { ...session, tables }
-  if (nextSeat === null) return { ...session, tables, stage: 'table_over', looks: undisguisedLooks(session.seatCount) }
-  return { ...session, tables, stage: 'between_turns' }
+/** Takes back the last move of this deal, reopening the turn if that move had passed it. */
+export function undoSoloMove<State>(session: SoloPlaytest<State>): SoloPlaytest<State> {
+  if (!canUndo(session)) return session
+  return { ...session, turnStates: session.turnStates.slice(0, -1), stage: 'playing' }
+}
+
+export function canUndo<State>(session: SoloPlaytest<State>): boolean {
+  return isMidTurn(session) && hasMovesThisDeal(session)
+}
+
+/**
+ * Settles the turn the tester just played at its table, then deals the next one straight
+ * away, or shows the table with its real seats if that turn finished it.
+ */
+export function endSoloTurn<Settings, State, Move>(
+  rules: GameRules<Settings, State, Move>,
+  session: SoloPlaytest<State>,
+): SoloPlaytest<State> {
+  if (session.stage !== 'turn_over') return session
+  const table = session.tables[session.tableIndex]
+  const state = stateOnScreen(session)
+  const nextSeat = rules.activePlayer(state)
+  const endedTable: PlaytestTable<State> = {
+    state,
+    turnOrder: withTurnTaker(table.turnOrder, nextSeat),
+    turnCount: table.turnCount + 1,
+  }
+  const ended: SoloPlaytest<State> = {
+    ...session,
+    tables: session.tables.map((current, index) => (index === session.tableIndex ? endedTable : current)),
+    turnStates: [state],
+  }
+  if (nextSeat === null) return { ...ended, stage: 'table_over', looks: undisguisedLooks(session.seatCount) }
+  return dealAnyTable(rules, ended)
+}
+
+/** The summary may only be seen between turns, never once a move has been made in one. */
+export function canShowSummary<State>(session: SoloPlaytest<State>): boolean {
+  return session.stage !== 'summary' && session.stage !== 'turn_over' && !hasMovesThisDeal(session)
 }
 
 export function showSummary<State>(session: SoloPlaytest<State>): SoloPlaytest<State> {
-  return session.stage === 'playing' ? session : { ...session, stage: 'summary' }
+  return canShowSummary(session) ? { ...session, stage: 'summary' } : session
 }

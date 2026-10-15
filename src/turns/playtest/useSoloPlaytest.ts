@@ -1,6 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { GameModule, PlayerIndex, PlayerProfile, UserRole } from '../types'
-import { dealNextTurn, openTableCountOf, playSoloMove, showSummary, type SoloPlaytest, type SoloStage } from './session'
+import {
+  canShowSummary,
+  canUndo,
+  dealNextTurn,
+  dealtSeatOf,
+  endSoloTurn,
+  openTableCountOf,
+  playSoloMove,
+  showSummary,
+  stateOnScreen,
+  undoSoloMove,
+  type SoloPlaytest,
+  type SoloStage,
+} from './session'
 import { savePlaytest } from './storage'
 import { summarizePlaytest, type PlaytestSummary } from './summary'
 
@@ -17,7 +30,12 @@ export interface SoloPlaytestView<State, Move> {
   strategyNote: string
   /** Non-null only while the stage is 'summary'. */
   summary: PlaytestSummary | null
+  canUndo: boolean
+  /** False once a move has been made this deal: the summary waits for the turn to end. */
+  canShowSummary: boolean
   submitMove: (move: Move) => void
+  undoMove: () => void
+  endTurn: () => void
   dealNextTurn: () => void
   showSummary: () => void
 }
@@ -39,6 +57,8 @@ export function useSoloPlaytest<Settings, State, Move>({
   useEffect(() => savePlaytest(gameId, session), [gameId, session])
 
   const submitMove = useCallback((move: Move) => setSession(current => playSoloMove(rules, current, move)), [rules])
+  const undo = useCallback(() => setSession(undoSoloMove), [])
+  const endTurn = useCallback(() => setSession(current => endSoloTurn(rules, current)), [rules])
   const deal = useCallback(() => setSession(current => dealNextTurn(rules, current)), [rules])
   const summarize = useCallback(() => setSession(showSummary), [])
 
@@ -48,19 +68,22 @@ export function useSoloPlaytest<Settings, State, Move>({
   const players = useMemo(() => looks.map(look => ({ name: playerAppearance(look).name })), [looks, playerAppearance])
   const summary = useMemo(() => (session.stage === 'summary' ? summarizePlaytest(rules, session) : null), [rules, session])
 
-  const state = session.tables[session.tableIndex].state
-  const activeSeat = rules.activePlayer(state)
+  const dealtSeat = dealtSeatOf(rules, session)
   return {
     stage: session.stage,
-    state,
-    role: session.stage === 'playing' && activeSeat !== null ? activeSeat : 'spectator',
+    state: stateOnScreen(session),
+    role: dealtSeat ?? 'spectator',
     players,
     lookOf,
     dealCount: session.dealCount,
     openTableCount: openTableCountOf(rules, session),
     strategyNote: session.strategyNote,
     summary,
+    canUndo: canUndo(session),
+    canShowSummary: canShowSummary(session),
     submitMove,
+    undoMove: undo,
+    endTurn,
     dealNextTurn: deal,
     showSummary: summarize,
   }

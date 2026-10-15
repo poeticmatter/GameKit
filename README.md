@@ -59,11 +59,11 @@ The Supabase table each mode expects is defined by the matching template's `supa
 In turn-based games, hot seat is built for playtesting alone, so it keeps the tester from carrying a plan from one turn to the next. (Simultaneous games still pass one device between two players.)
 
 - The lobby asks for 1–4 **tables**: separate games with the same settings and player count, each with its own seed.
-- After every turn a "Next turn" screen hides the board, then deals the tester into a random unfinished table, sometimes the same one again.
+- When the dealt seat's turn has passed, the tester presses **End turn** and is dealt straight into a random unfinished table, sometimes the same one again. Until then **Undo** takes back the turn's moves one at a time. (A move that drew from a seeded bag draws the same thing again when replayed.)
 - The seat being played always looks like seat 0, and the other seats' looks are shuffled, so the tester is the same colour every turn. A finished table shows its real seats.
-- An optional **strategy** note, written in the lobby, is shown before every turn: one way of playing (a personality) to apply to every seat.
-- The **summary**, open from any "Next turn" screen and offered when the last table ends, repeats the strategy and lists each table's seats in the order they first took a turn, with scores and winners. Across finished tables it counts wins by turn position, which shows a first-player advantage even when the game picks the first player at random.
-- The playtest is saved in the browser after every change, so a reload carries on. Ending it from the summary, or quitting it at any point (Quit sits above every table and on each "Next turn" screen, and asks first), discards it and returns to the lobby. If a saved playtest no longer works after the game's code changes, the kit offers to discard it.
+- An optional **strategy** note, written in the lobby, is shown above every table: one way of playing (a personality) to apply to every seat.
+- The **summary**, open above the board before the turn's first move and offered when a table ends, repeats the strategy and lists each table's seats in the order they first took a turn, with scores and winners. Across finished tables it counts wins by turn position, which shows a first-player advantage even when the game picks the first player at random.
+- The playtest is saved in the browser after every change, so a reload carries on. Ending it from the summary, or quitting it at any point (Quit sits above every table and asks first), discards it and returns to the lobby. If a saved playtest no longer works after the game's code changes, the kit offers to discard it.
 
 Winners and scores come from the optional `GameRules.outcome(state)`, called only once `activePlayer` is null; without it the summary still shows turn order. Game states are saved as JSON, which they already must be for async play.
 
