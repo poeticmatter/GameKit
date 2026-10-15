@@ -1,0 +1,39 @@
+/*
+ * GameKit's default look and the colour tokens its screens use. Import it in the game's
+ * stylesheet right after Tailwind:
+ *
+ *   @import "tailwindcss";
+ *   @import "game-kit/theme.css";
+ *
+ * Then override any token in the game's own @theme block. The kit's components only
+ * use these tokens, so the whole lobby and every status screen follows the game's palette.
+ */
+
+/* Tailwind skips node_modules, so point it at the kit's components explicitly. */
+@source "./";
+
+@theme {
+  --color-ground: #e7eaef;    /* page background */
+  --color-paper: #ffffff;     /* cards and inputs */
+  --color-ink: #262a31;       /* main text */
+  --color-ink-soft: #5b6370;  /* secondary text */
+  --color-ink-faint: #8a93a0; /* hints and placeholders */
+  --color-rule: #c4cad3;      /* borders */
+  --color-slot: #dde1e7;      /* hover and selected fills */
+  --color-accent: #262a31;    /* primary buttons and selected options */
+  --color-on-accent: #ffffff; /* text on accent */
+  --color-alert: #b3261e;     /* warnings */
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+}

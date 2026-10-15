@@ -1,0 +1,40 @@
+{
+  "name": "game-kit",
+  "private": true,
+  "version": "0.1.0",
+  "description": "The game lab's multiplayer platform: lobby, seats, async (Supabase), live (PeerJS) and hot-seat play.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/poeticmatter/GameKit"
+  },
+  "exports": {
+    "./simultaneous": "./src/simultaneous/index.ts",
+    "./turns": "./src/turns/index.ts",
+    "./theme.css": "./src/theme.css"
+  },
+  "files": [
+    "src",
+    "tsconfig.json"
+  ],
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@supabase/supabase-js": "^2.100.0",
+    "peerjs": "^1.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "^2.108.2",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "peerjs": "^1.5.5",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "~5.8.2",
+    "vitest": "^3.2.7"
+  }
+}
