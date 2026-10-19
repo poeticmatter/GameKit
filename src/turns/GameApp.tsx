@@ -11,10 +11,12 @@ import { SoloPlaytestMatch } from './playtest/SoloPlaytestMatch'
 import { loadPlaytest } from './playtest/storage'
 import { JoinScreen, WaitingForPlayersScreen } from './screens'
 import { rememberRole } from './seats'
+import { TurnBar } from './TurnBar'
 import type { GameModule, MatchConnection, MatchSetup, NewMatch } from './types'
 import { useAsyncMatch } from './useAsyncMatch'
 import { usePeerGuest } from './usePeerGuest'
 import { usePeerHost } from './usePeerHost'
+import { useTurnDraft } from './useTurnDraft'
 
 /**
  * A whole turn-based game app: the lobby, then a match over whichever transport was
@@ -31,7 +33,11 @@ interface RoomProps<Settings, State, Move> extends AppProps<Settings, State, Mov
   room: RoomLink
 }
 
-function isMyTurn<Settings, State, Move>(game: GameModule<Settings, State, Move>, { state, role, status }: MatchConnection<State, Move>) {
+function isMyTurn<Settings, State, Move>(
+  game: GameModule<Settings, State, Move>,
+  state: State | null,
+  { role, status }: MatchConnection<State, Move>,
+) {
   return status === 'playing' && state !== null && role === game.rules.activePlayer(state)
 }
 
@@ -42,8 +48,11 @@ function MatchScreen<Settings, State, Move>({
   room,
   connection,
 }: RoomProps<Settings, State, Move> & { connection: MatchConnection<State, Move> }) {
-  const { state, status, errorMessage, players, playerCount, seatChoice } = connection
-  useTurnTitle(config.title, isMyTurn(game, connection))
+  const { status, errorMessage, players, playerCount, seatChoice } = connection
+  // The player's own turn is played on their screen first; everyone else sees what was sent.
+  const turn = useTurnDraft(game.rules, connection)
+  const state = turn.state
+  useTurnTitle(config.title, isMyTurn(game, state, connection))
 
   if (status === 'error') return <StatusScreen message={errorMessage ?? 'Connection error.'} />
   if (status === 'disconnected') return <StatusScreen message="Lost connection to the host." />
@@ -55,14 +64,17 @@ function MatchScreen<Settings, State, Move>({
   if (status === 'waiting_for_players') return <WaitingForPlayersScreen room={room} {...seats} />
 
   return (
-    <game.Board
-      state={state}
-      role={connection.role}
-      players={players}
-      onMove={connection.submitMove}
-      seating="remote"
-      lookOf={undisguised}
-    />
+    <>
+      {turn.actions && <TurnBar {...turn.actions} />}
+      <game.Board
+        state={state}
+        role={connection.role}
+        players={players}
+        onMove={turn.onMove}
+        seating="remote"
+        lookOf={undisguised}
+      />
+    </>
   )
 }
 

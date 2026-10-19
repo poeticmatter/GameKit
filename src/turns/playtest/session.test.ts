@@ -117,6 +117,42 @@ describe('solo playtest undo', () => {
   })
 })
 
+describe('solo playtest moves that can’t be undone', () => {
+  const start = startTally([0, 0])
+  // Wide enough that three adds can't finish the table.
+  const afterRoll = playMoves(start, ['add', 'roll'])
+
+  it('can be neither undone nor reached back past', () => {
+    expect(canUndo(afterRoll)).toBe(false)
+    expect(undoSoloMove(afterRoll)).toBe(afterRoll)
+  })
+
+  it('leave the moves before them standing', () => {
+    expect(stateOnScreen(afterRoll).adds.reduce((total, adds) => total + adds, 0)).toBe(2)
+  })
+
+  it('leave later moves undoable, back to the roll', () => {
+    const later = playMoves(start, ['add', 'roll', 'pass'])
+    expect(canUndo(later)).toBe(true)
+    expect(stateOnScreen(undoSoloMove(later))).toEqual(stateOnScreen(afterRoll))
+    expect(canUndo(undoSoloMove(later))).toBe(false)
+  })
+
+  it('count as the first move of a deal too', () => {
+    expect(canUndo(playMoves(start, ['roll']))).toBe(false)
+  })
+
+  it('stop the summary from opening mid-turn like any move', () => {
+    expect(showSummary(afterRoll)).toBe(afterRoll)
+  })
+
+  it('stop mattering once the turn is ended', () => {
+    const next = endSoloTurn(tallyRules, playMoves(start, ['roll', 'pass']))
+    expect(next.undoFloor).toBe(0)
+    expect(playSoloMove(tallyRules, next, 'add').undoFloor).toBe(0)
+  })
+})
+
 describe('solo playtest turn end', () => {
   const start = startTally([0, 0])
 

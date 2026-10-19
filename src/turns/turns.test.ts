@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { IllegalMoveError } from './IllegalMoveError'
-import { applyPlayerMove } from './moveValidation'
+import { applyPlayerMove, applyPlayerMoves } from './moveValidation'
 import { parseRole } from './seats'
 import type { GameRules } from './types'
 import { deriveStatus, validRole } from './useAsyncMatch'
@@ -40,6 +40,29 @@ describe('applying a player’s move', () => {
   it('lets unexpected errors through', () => {
     const brokenRules = { ...countRules, applyMove: () => { throw new TypeError('bug') } }
     expect(() => applyPlayerMove(brokenRules, start, 0, 1)).toThrow(TypeError)
+  })
+})
+
+describe('applying a turn’s moves', () => {
+  // The counting game passes play on after every move, so a turn of two moves must be refused.
+  const start = countRules.createInitialState({ settings: null, playerCount: 2, seed: 1 })
+
+  it('applies a single move like applyPlayerMove', () => {
+    expect(applyPlayerMoves(countRules, start, 0, [2])).toEqual({ total: 2, activePlayer: 1 })
+  })
+
+  it('applies no moves as no change', () => {
+    expect(applyPlayerMoves(countRules, start, 0, [])).toBe(start)
+  })
+
+  it('refuses the whole turn when a later move is refused', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(applyPlayerMoves(countRules, start, 0, [1, 1])).toBeNull()
+  })
+
+  it('refuses the whole turn when a move is illegal', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    expect(applyPlayerMoves(countRules, start, 0, [3])).toBeNull()
   })
 })
 

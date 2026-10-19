@@ -3,14 +3,14 @@ import type { DataConnection } from 'peerjs'
 import type { GameConfig } from '../core/config'
 import { hostPeerId } from '../core/peer'
 import { sendToGuest, useHostPeer } from '../core/useHostPeer'
-import { applyPlayerMove } from './moveValidation'
+import { applyPlayerMoves } from './moveValidation'
 import type { GuestMessage, HostMessage } from './peerMessages'
 import type { ConnectionStatus, GameRules, MatchConnection, NewMatch, PlayerIndex, PlayerProfile } from './types'
 
 /**
  * Live (PeerJS) transport for the player who created the room. The host holds seat 0
- * and is the only peer that runs game rules: guests send moves, the host applies the
- * ones from the active player and broadcasts the result.
+ * and is the only peer that runs game rules: guests send their turns, the host applies
+ * the ones from the active player and broadcasts the result.
  *
  * Everyone who connects gets a snapshot first, then takes a free seat, takes back a
  * seat they held before (after a reload or on another device), or watches.
@@ -47,6 +47,10 @@ function profilesOf(seats: Seat[]): PlayerProfile[] {
   }))
 }
 
+function snapshotOf<State>({ state, version, seats }: HostTable<State>, playerCount: number): HostMessage<State> {
+  return { type: 'SNAPSHOT', state, version, players: profilesOf(seats), playerCount }
+}
+
 function seatOf(seats: Seat[], connection: DataConnection): PlayerIndex | null {
   const index = seats.findIndex(seat => seat.connection === connection)
   return index === -1 ? null : index
@@ -78,21 +82,23 @@ export function usePeerHost<Settings, State, Move>({
   })
 
   const broadcast = useCallback(() => {
-    const { state: current, version, seats, spectators, undecided } = table.current
-    const snapshot: HostMessage<State> = { type: 'SNAPSHOT', state: current, version, players: profilesOf(seats), playerCount }
+    const { state: current, seats, spectators, undecided } = table.current
+    const snapshot = snapshotOf(table.current, playerCount)
     const guests = [...seats.map(seat => seat.connection), ...spectators, ...undecided]
     for (const connection of guests) if (connection) sendToGuest(connection, snapshot)
     setState(current)
     setPlayers(profilesOf(seats))
   }, [playerCount])
 
-  const applyMove = useCallback(
-    (player: PlayerIndex, move: Move) => {
-      const nextState = applyPlayerMove(rules, table.current.state, player, move)
-      if (nextState === null) return
+  /** Returns false, leaving the table alone, if the player's moves aren't all legal. */
+  const applyTurn = useCallback(
+    (player: PlayerIndex, moves: Move[]) => {
+      const nextState = applyPlayerMoves(rules, table.current.state, player, moves)
+      if (nextState === null) return false
       table.current.state = nextState
       table.current.version += 1
       broadcast()
+      return true
     },
     [rules, broadcast],
   )
@@ -106,9 +112,12 @@ export function usePeerHost<Settings, State, Move>({
 
   function receive(connection: DataConnection, message: GuestMessage<Move>) {
     const { seats, version } = table.current
-    if (message.type === 'MOVE') {
+    if (message.type === 'TURN') {
       const seat = seatOf(seats, connection)
-      if (seat !== null && message.version === version) applyMove(seat, message.move)
+      if (seat === null) return
+      const isApplied = message.version === version && applyTurn(seat, message.moves)
+      // A guest that sent a stale or illegal turn is waiting for an answer: show it the table as it is.
+      if (!isApplied) sendToGuest(connection, snapshotOf(table.current, playerCount))
       return
     }
     if (seatOf(seats, connection) !== null) return
@@ -139,7 +148,7 @@ export function usePeerHost<Settings, State, Move>({
     },
   })
 
-  const submitMove = useCallback((move: Move) => applyMove(HOST_SEAT, move), [applyMove])
+  const submitMoves = useCallback((moves: Move[]) => void applyTurn(HOST_SEAT, moves), [applyTurn])
 
   return {
     state,
@@ -149,6 +158,6 @@ export function usePeerHost<Settings, State, Move>({
     status: hostStatus({ errorMessage, isOpen, seatsTaken: players.length, playerCount }),
     errorMessage,
     seatChoice: null,
-    submitMove,
+    submitMoves,
   }
 }

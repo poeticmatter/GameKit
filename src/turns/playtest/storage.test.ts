@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { playSoloMove } from './session'
 import { parsePlaytest, serializePlaytest } from './storage'
-import { playThrough, startTally } from './tallyGame'
+import { playThrough, startTally, tallyRules } from './tallyGame'
 
 beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {})
@@ -15,6 +16,17 @@ describe('saved playtests', () => {
   it('keep moves not yet ended', () => {
     const session = playThrough(startTally([0, 1]), ['add', 'pass', 'add'])
     expect(parsePlaytest(serializePlaytest(session))).toEqual(session)
+  })
+
+  it('keep the moves that can’t be undone', () => {
+    const rolled = playSoloMove(tallyRules, startTally([0, 1]), 'roll')
+    expect(rolled.undoFloor).toBe(1)
+    expect(parsePlaytest(serializePlaytest(rolled))).toEqual(rolled)
+  })
+
+  it('are ignored when the undo floor is outside the turn', () => {
+    const session = startTally([0])
+    expect(parsePlaytest(serializePlaytest({ ...session, undoFloor: 4 }))).toBeNull()
   })
 
   it('are absent when nothing was saved', () => {

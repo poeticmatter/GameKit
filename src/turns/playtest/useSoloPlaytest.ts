@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { confirmIrreversible, irreversibleReasonOf } from '../irreversible'
 import type { GameModule, PlayerIndex, PlayerProfile, UserRole } from '../types'
 import {
   canShowSummary,
@@ -56,7 +57,17 @@ export function useSoloPlaytest<Settings, State, Move>({
 
   useEffect(() => savePlaytest(gameId, session), [gameId, session])
 
-  const submitMove = useCallback((move: Move) => setSession(current => playSoloMove(rules, current, move)), [rules])
+  const submitMove = useCallback(
+    (move: Move) => {
+      // Ask before a move that can't be undone, so the tester can think again.
+      if (session.stage === 'playing') {
+        const reason = irreversibleReasonOf(rules, stateOnScreen(session), move)
+        if (reason !== null && !confirmIrreversible(reason)) return
+      }
+      setSession(current => playSoloMove(rules, current, move))
+    },
+    [rules, session],
+  )
   const undo = useCallback(() => setSession(undoSoloMove), [])
   const endTurn = useCallback(() => setSession(current => endSoloTurn(rules, current)), [rules])
   const deal = useCallback(() => setSession(current => dealNextTurn(rules, current)), [rules])

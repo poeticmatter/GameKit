@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react'
 import { Button, Card, ColorSwatch, FieldLabel } from '../../core/controls'
 import { CenteredScreen } from '../../core/screens'
+import { BAR_BUTTON_CLASSES, TurnActionButtons, type TurnActions } from '../TurnBar'
 import type { PlayerAppearance } from '../types'
 
 /** "1 table", "3 tables". */
@@ -18,30 +19,18 @@ function confirmQuit(onQuit: () => void) {
 }
 
 /** What the tester can do with the turn they were dealt. */
-export interface TurnControls {
+export interface TurnControls extends TurnActions {
   /** The look the tester plays in. */
   appearance: PlayerAppearance
-  canUndo: boolean
-  /** True once the seat's turn has passed and only needs ending. */
-  canEndTurn: boolean
-  onUndo: () => void
-  onEndTurn: () => void
 }
 
-const BAR_BUTTON_CLASSES = 'px-3 py-1.5 text-sm'
-
-function TurnButtons({ appearance, canUndo, canEndTurn, onUndo, onEndTurn }: TurnControls) {
+function TurnButtons({ appearance, ...actions }: TurnControls) {
   return (
     <>
       <p className="flex items-center gap-2">
         You play <ColorSwatch color={appearance.color} /> <span className="font-semibold">{appearance.name}</span>
       </p>
-      <Button tone="secondary" className={BAR_BUTTON_CLASSES} disabled={!canUndo} onClick={onUndo}>
-        Undo
-      </Button>
-      <Button className={BAR_BUTTON_CLASSES} disabled={!canEndTurn} onClick={onEndTurn}>
-        End turn
-      </Button>
+      <TurnActionButtons {...actions} />
     </>
   )
 }

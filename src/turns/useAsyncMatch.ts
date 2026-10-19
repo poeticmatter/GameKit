@@ -3,7 +3,7 @@ import type { GameConfig } from '../core/config'
 import { matchTableOf } from '../core/matchTable'
 import { useRoomRow } from '../core/useRoomRow'
 import { claimSeat, createMatch, loadMatch, saveMove, type MatchRow } from './asyncMatchApi'
-import { applyPlayerMove } from './moveValidation'
+import { applyPlayerMoves } from './moveValidation'
 import { recallRole, rememberRole } from './seats'
 import type { ConnectionStatus, GameRules, MatchConnection, NewMatch, PlayerIndex, SeatChoice, UserRole } from './types'
 
@@ -11,7 +11,7 @@ import type { ConnectionStatus, GameRules, MatchConnection, NewMatch, PlayerInde
  * Async (Supabase) transport for turn-based games. No browser has to stay online: the
  * authoritative state lives in the game's table (kept on screen by useRoomRow).
  *
- * The active player's client applies each move locally, shows it at once, and queues
+ * The active player's client applies their turn locally, shows it at once, and queues
  * the write. Writes go out one at a time, each guarded on the version it was computed
  * from; if one is refused, the row is reloaded and the board snaps to what's stored.
  */
@@ -102,11 +102,11 @@ export function useAsyncMatch<Settings, State, Move>({
     [config, roomCode, chooseRole, catchUp, fail],
   )
 
-  const submitMove = useCallback(
-    (move: Move) => {
+  const submitMoves = useCallback(
+    (moves: Move[]) => {
       const current = latestRow.current
       if (!current || typeof role !== 'number') return
-      const nextState = applyPlayerMove(rules, current.state, role, move)
+      const nextState = applyPlayerMoves(rules, current.state, role, moves)
       if (nextState === null) return
 
       const fromVersion = current.version
@@ -114,7 +114,7 @@ export function useAsyncMatch<Settings, State, Move>({
       writeQueue.current = writeQueue.current
         .then(async () => {
           if (await saveMove(matchTableOf(config), roomCode, fromVersion, nextState)) return
-          console.warn(`Move on version ${fromVersion} of room ${roomCode} was refused as stale; reloading.`)
+          console.warn(`Turn on version ${fromVersion} of room ${roomCode} was refused as stale; reloading.`)
           await resync()
         })
         .catch(fail)
@@ -131,6 +131,6 @@ export function useAsyncMatch<Settings, State, Move>({
     status,
     errorMessage,
     seatChoice: status === 'choosing_seat' ? seatChoice : null,
-    submitMove,
+    submitMoves,
   }
 }

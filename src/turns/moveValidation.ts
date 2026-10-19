@@ -26,3 +26,22 @@ export function applyPlayerMove<Settings, State, Move>(
     return null
   }
 }
+
+/**
+ * Applies a whole turn's moves, in order, as {@link applyPlayerMove} would one at a time.
+ * Returns null, leaving the state alone, if any of them is refused.
+ */
+export function applyPlayerMoves<Settings, State, Move>(
+  rules: GameRules<Settings, State, Move>,
+  state: State,
+  player: PlayerIndex,
+  moves: Move[],
+): State | null {
+  let current = state
+  for (const move of moves) {
+    const next = applyPlayerMove(rules, current, player, move)
+    if (next === null) return null
+    current = next
+  }
+  return current
+}

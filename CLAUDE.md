@@ -22,7 +22,7 @@ npm pack         # tarball for trying a change in a game before releasing
   - `useHostPeer.ts` / `useHostLink.ts`: the PeerJS host and guest connection lifecycles (the guest reconnects with backoff).
   - `controls.tsx`, `screens.tsx` (status screens, share link, lobby frame, play-mode picker), `useTurnTitle.ts`.
 - `src/simultaneous/`: two players, plans committed at the same time (`resolveTurn`). Type names match the original game-template platform so older games can switch by changing imports. Async rows have `turn`, `p1_plan`, `p2_plan`, `p2_joined`.
-- `src/turns/`: 2–N players in turn order (`activePlayer` / `applyMove`, `IllegalMoveError`). Async rows have `players`, `player_count`, `state`, `version`; seats are claimed through the `<id>_claim_seat` RPC.
+- `src/turns/`: 2–N players in turn order (`activePlayer` / `applyMove`, `IllegalMoveError`). A player's turn is a draft on their screen (`turnDraft.ts`, `useTurnDraft.ts`, `TurnBar.tsx`) until they end it, and `irreversibleReason` marks moves that can't be undone. Async rows have `players`, `player_count`, `state`, `version`; seats are claimed through the `<id>_claim_seat` RPC.
   - `playtest/`: hot seat is a solo playtest. `session.ts` deals turns across several tables with the played seat disguised as seat 0 (boards draw seats through `BoardProps.lookOf`); `summary.ts` reads results by turn position via the optional `GameRules.outcome`; `storage.ts` keeps the playtest in localStorage so a reload resumes it.
 - Each mode's `index.ts` is its public API, re-exporting the core pieces games use (`GameConfig`, `supabaseFromEnv`, controls, `nextRandom`/`nextIndex`, `Seating`). `src/theme.css` is the third export.
 

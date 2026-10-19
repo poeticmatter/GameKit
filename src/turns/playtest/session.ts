@@ -1,5 +1,6 @@
 import { nextIndex } from '../../core/random'
 import { disguiseSeats, undisguisedLooks } from '../../core/seatDisguise'
+import { irreversibleReasonOf } from '../irreversible'
 import { applyPlayerMove } from '../moveValidation'
 import type { GameRules, MatchSetup, PlayerIndex } from '../types'
 
@@ -11,7 +12,8 @@ import type { GameRules, MatchSetup, PlayerIndex } from '../types'
  * tester never knows where they're about to sit. Once they end a turn they're dealt
  * straight into a random unfinished table, sometimes the same one again, and the seat
  * they play is disguised as the first seat while the others' looks are shuffled. Moves
- * can be undone until the turn is ended. A finished table shows its real seats.
+ * can be undone until the turn is ended, except those a game says can't be undone (see
+ * GameRules.irreversibleReason). A finished table shows its real seats.
  */
 
 export type SoloStage =
@@ -43,6 +45,11 @@ export interface SoloPlaytest<State> {
    * undone until then.
    */
   turnStates: State[]
+  /**
+   * Index into `turnStates` of the earliest state a move can be undone back to: 0, until a
+   * move that can't be undone is made, then that move's own state.
+   */
+  undoFloor: number
   seatCount: number
   /** `looks[seat]` is the seat whose look that seat is drawn with at the table on screen. */
   looks: PlayerIndex[]
@@ -127,6 +134,7 @@ function dealAnyTable<Settings, State, Move>(
     ...session,
     tableIndex,
     turnStates: [session.tables[tableIndex].state],
+    undoFloor: 0,
     looks: disguise.looks,
     stage: 'playing',
     dealCount: session.dealCount + 1,
@@ -148,6 +156,7 @@ export function startSoloPlaytest<Settings, State, Move>(
     tables,
     tableIndex: 0,
     turnStates: [tables[0].state],
+    undoFloor: 0,
     seatCount,
     looks: undisguisedLooks(seatCount),
     stage: 'playing',
@@ -174,17 +183,19 @@ export function playSoloMove<Settings, State, Move>(
   if (nextState === null) return session
 
   const isTurnOver = rules.activePlayer(nextState) !== seat
-  return { ...session, turnStates: [...session.turnStates, nextState], stage: isTurnOver ? 'turn_over' : 'playing' }
+  // A move that can't be undone makes its own state the furthest back an undo can reach.
+  const undoFloor = irreversibleReasonOf(rules, state, move) === null ? session.undoFloor : session.turnStates.length
+  return { ...session, turnStates: [...session.turnStates, nextState], undoFloor, stage: isTurnOver ? 'turn_over' : 'playing' }
 }
 
-/** Takes back the last move of this deal, reopening the turn if that move had passed it. */
+/** Takes back the last move of this deal that can be undone, reopening the turn if that move had passed it. */
 export function undoSoloMove<State>(session: SoloPlaytest<State>): SoloPlaytest<State> {
   if (!canUndo(session)) return session
   return { ...session, turnStates: session.turnStates.slice(0, -1), stage: 'playing' }
 }
 
 export function canUndo<State>(session: SoloPlaytest<State>): boolean {
-  return isMidTurn(session) && hasMovesThisDeal(session)
+  return isMidTurn(session) && session.turnStates.length - 1 > session.undoFloor
 }
 
 /**
@@ -208,6 +219,7 @@ export function endSoloTurn<Settings, State, Move>(
     ...session,
     tables: session.tables.map((current, index) => (index === session.tableIndex ? endedTable : current)),
     turnStates: [state],
+    undoFloor: 0,
   }
   if (nextSeat === null) return { ...ended, stage: 'table_over', looks: undisguisedLooks(session.seatCount) }
   return dealAnyTable(rules, ended)

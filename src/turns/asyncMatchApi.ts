@@ -16,7 +16,7 @@ export interface MatchRow<Settings, State> {
   player_count: number
   players: PlayerProfile[]
   state: State
-  /** Counts applied moves; guards every state write. */
+  /** Counts sent turns (and moves sent early, see GameRules.irreversibleReason); guards every state write. */
   version: number
 }
 
@@ -58,7 +58,7 @@ export async function claimSeat(table: MatchTable, code: string, name: string): 
 }
 
 /**
- * Stores the state after one move, guarded on the version it was computed from.
+ * Stores the state after a turn's moves, guarded on the version it was computed from.
  * Returns false when the stored version has moved on, so nothing was written.
  */
 export async function saveMove<State>(table: MatchTable, code: string, fromVersion: number, nextState: State): Promise<boolean> {

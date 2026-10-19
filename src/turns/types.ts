@@ -53,6 +53,15 @@ export interface GameRules<Settings, State, Move> {
    * activePlayer is null; without it the summary can't name winners.
    */
   outcome?(state: State): GameOutcome
+  /**
+   * Why `move` can't be undone once it is played, or null if it can. Return a message when
+   * the move draws on the game's randomness (or reveals anything else the player could use
+   * to take back the move and choose differently). The player is warned before such a move
+   * and, if they go ahead, it is sent to the other players at once, along with the turn's
+   * moves so far; nothing before it can be undone either. `move` may be one the rules would
+   * reject, in which case it may throw IllegalMoveError.
+   */
+  irreversibleReason?(state: State, move: Move): string | null
 }
 
 export interface GameOutcome {
@@ -125,5 +134,9 @@ export interface MatchConnection<State, Move> {
   errorMessage: string | null
   /** Non-null only while status is 'choosing_seat'. */
   seatChoice: SeatChoice | null
-  submitMove: (move: Move) => void
+  /**
+   * Sends the moves of one turn, in order, all played by this player. They are applied
+   * together, or not at all if any is refused.
+   */
+  submitMoves: (moves: Move[]) => void
 }

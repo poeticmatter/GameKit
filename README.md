@@ -59,7 +59,7 @@ The Supabase table each mode expects is defined by the matching template's `supa
 In turn-based games, hot seat is built for playtesting alone, so it keeps the tester from carrying a plan from one turn to the next. (Simultaneous games still pass one device between two players.)
 
 - The lobby asks for 1–4 **tables**: separate games with the same settings and player count, each with its own seed.
-- When the dealt seat's turn has passed, the tester presses **End turn** and is dealt straight into a random unfinished table, sometimes the same one again. Until then **Undo** takes back the turn's moves one at a time. (A move that drew from a seeded bag draws the same thing again when replayed.)
+- When the dealt seat's turn has passed, the tester presses **End turn** and is dealt straight into a random unfinished table, sometimes the same one again. Until then **Undo** takes back the turn's moves one at a time, except moves that can't be undone (see below).
 - The seat being played always looks like seat 0, and the other seats' looks are shuffled, so the tester is the same colour every turn. A finished table shows its real seats.
 - An optional **strategy** note, written in the lobby, is shown above every table: one way of playing (a personality) to apply to every seat.
 - The **summary**, open above the board before the turn's first move and offered when a table ends, repeats the strategy and lists each table's seats in the order they first took a turn, with scores and winners. Across finished tables it counts wins by turn position, which shows a first-player advantage even when the game picks the first player at random.
@@ -68,6 +68,20 @@ In turn-based games, hot seat is built for playtesting alone, so it keeps the te
 Winners and scores come from the optional `GameRules.outcome(state)`, called only once `activePlayer` is null; without it the summary still shows turn order. Game states are saved as JSON, which they already must be for async play.
 
 A board takes part through `BoardProps.lookOf`: draw every seat-coloured thing (pieces, swatches, colour names) with `lookOf(seat)` instead of `seat`, and take names from `players`, which hot seat names after each seat's look. Online, `lookOf(seat)` is just `seat`. Anything else ordered by seat, such as a scoreboard in seat order, still gives the seat away; list players starting from the viewer's seat instead.
+
+## Undo and End turn
+
+Hot seat, async and live play all take a turn the same way. The player's moves stay on their own screen, where **Undo** takes them back one at a time, until play has passed to someone else and they press **End turn**. Then the whole turn is sent at once: one write to the database in async play, one message to the host in live play. Everyone else keeps seeing the state as it was after the last turn that was sent. A draft is kept only in memory, so a reload during a turn drops the moves not yet sent.
+
+A game can mark moves that can't be undone, by drawing at random for example: if a player could see the draw, undo and choose differently, they would be peeking, and a seeded draw would just come out the same when replayed. Give `GameRules` the optional
+
+```ts
+irreversibleReason(state, move): string | null
+```
+
+and return a message for such a move. Before playing it the kit pauses the game with a warning that shows the message, and if the player goes ahead it sends the turn so far at once, so nothing before the move can be undone, even by reloading. For a move the rules reject it can throw `IllegalMoveError` or return null. Hot seat asks and counts the move the same way.
+
+Transports submit a whole turn with `MatchConnection.submitMoves(moves)`, which applies the moves in order, or none of them if one is refused. Live guests send a `TURN` message carrying the version it was made on; a host that refuses it sends the guest a snapshot so it catches up.
 
 ## Developing
 

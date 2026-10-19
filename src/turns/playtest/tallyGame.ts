@@ -4,13 +4,14 @@ import { dealNextTurn, endSoloTurn, playSoloMove, startSoloPlaytest, type SoloPl
 
 // A tiny game for the playtest tests. The active player may add 1 to their tally as often
 // as they like, then pass to the next seat. The seed picks who starts. The table is over
-// once the tallies reach 3 between them; the most adds wins. Cheating is illegal.
+// once the tallies reach 3 between them; the most adds wins. Cheating is illegal. A "roll"
+// adds 1 too, but draws at random, so it can't be undone.
 
 export interface TallyState {
   adds: number[]
   activePlayer: number
 }
-export type TallyMove = 'add' | 'pass' | 'cheat'
+export type TallyMove = 'add' | 'roll' | 'pass' | 'cheat'
 
 export const FINAL_TOTAL = 3
 
@@ -21,9 +22,10 @@ export const tallyRules: GameRules<null, TallyState, TallyMove> = {
   activePlayer: state => (totalOf(state) >= FINAL_TOTAL ? null : state.activePlayer),
   applyMove: (state, move) => {
     if (move === 'cheat') throw new IllegalMoveError('No cheating')
-    if (move === 'add') return { ...state, adds: state.adds.map((adds, seat) => (seat === state.activePlayer ? adds + 1 : adds)) }
+    if (move === 'add' || move === 'roll') return { ...state, adds: state.adds.map((adds, seat) => (seat === state.activePlayer ? adds + 1 : adds)) }
     return { ...state, activePlayer: (state.activePlayer + 1) % state.adds.length }
   },
+  irreversibleReason: (state, move) => (move === 'roll' ? 'Rolling draws at random.' : null),
   outcome: state => {
     const most = Math.max(...state.adds)
     return { winners: state.adds.flatMap((adds, seat) => (adds === most ? [seat] : [])), scores: state.adds }

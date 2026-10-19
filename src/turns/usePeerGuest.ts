@@ -8,7 +8,7 @@ import type { ConnectionStatus, MatchConnection, PlayerProfile, SeatChoice, User
 
 /**
  * Live (PeerJS) transport for anyone who opens a room link. The guest never runs game
- * rules: it sends its moves and shows whatever state the host broadcasts.
+ * rules: it sends its turns and shows whatever state the host broadcasts.
  *
  * A browser that held a seat before asks for it back automatically, including after a
  * dropped connection; otherwise it waits for the person to take a seat or watch.
@@ -68,10 +68,10 @@ export function usePeerGuest<State, Move>({ config, roomCode }: { config: GameCo
     [send],
   )
 
-  const submitMove = useCallback(
-    (move: Move) => {
+  const submitMoves = useCallback(
+    (moves: Move[]) => {
       if (typeof currentRole.current !== 'number' || currentVersion.current === null) return
-      send({ type: 'MOVE', version: currentVersion.current, move })
+      send({ type: 'TURN', version: currentVersion.current, moves })
     },
     [send],
   )
@@ -85,6 +85,6 @@ export function usePeerGuest<State, Move>({ config, roomCode }: { config: GameCo
     status,
     errorMessage: link.errorMessage,
     seatChoice: status === 'choosing_seat' ? seatChoice : null,
-    submitMove,
+    submitMoves,
   }
 }
