@@ -1,7 +1,7 @@
 {
   "name": "game-kit",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "The game lab's multiplayer platform: lobby, seats, async (Supabase), live (PeerJS) and hot-seat play.",
   "type": "module",
   "repository": {
