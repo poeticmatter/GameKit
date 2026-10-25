@@ -2,32 +2,32 @@ import { useCallback, useState } from 'react'
 import type { GameRules, MatchConnection, PlayerSlot, TurnBasedState, TurnPlan } from './types'
 
 /**
- * Hot-seat transport: both players share one device, and nothing goes online.
+ * Solo playtest: one tester plays both players on this device, and nothing goes online.
  *
- * Turns stay simultaneous: player 1 commits, the device is handed to player 2, player 2
- * commits, and only then is the turn resolved. A handoff screen sits between every pair
- * of inputs so that neither player sees the other's private view.
+ * Turns stay simultaneous: the tester commits player 1's plan, then player 2's, and only
+ * then is the turn resolved. A screen between every pair of plans says whose comes next,
+ * so the tester never enters a plan for the wrong player.
  */
 
-export interface HotSeatProgress<State, Plan> {
+export interface SoloPlaytestProgress<State, Plan> {
   state: State
   p1Plan: Plan | null
   activeSlot: PlayerSlot
   isHandoffPending: boolean
 }
 
-export interface HotSeatMatch<State, Plan> {
+export interface SoloPlaytestView<State, Plan> {
   connection: MatchConnection<State, Plan>
-  /** The player who must take the device next, or null while a player is at the board. */
+  /** The player whose plan comes next, or null while one is being planned. */
   pendingHandoff: PlayerSlot | null
   confirmHandoff: () => void
 }
 
 export function commitPlan<Settings, State extends TurnBasedState, Plan extends TurnPlan>(
-  progress: HotSeatProgress<State, Plan>,
+  progress: SoloPlaytestProgress<State, Plan>,
   plan: Plan,
   rules: GameRules<Settings, State, Plan>,
-): HotSeatProgress<State, Plan> {
+): SoloPlaytestProgress<State, Plan> {
   if (plan.turn !== progress.state.turn || progress.isHandoffPending) return progress
 
   if (progress.activeSlot === 1) {
@@ -43,11 +43,11 @@ export function commitPlan<Settings, State extends TurnBasedState, Plan extends 
   }
 }
 
-export function useHotSeatMatch<Settings, State extends TurnBasedState, Plan extends TurnPlan>(
+export function useSoloPlaytest<Settings, State extends TurnBasedState, Plan extends TurnPlan>(
   rules: GameRules<Settings, State, Plan>,
   settings: Settings,
-): HotSeatMatch<State, Plan> {
-  const [progress, setProgress] = useState<HotSeatProgress<State, Plan>>(() => ({
+): SoloPlaytestView<State, Plan> {
+  const [progress, setProgress] = useState<SoloPlaytestProgress<State, Plan>>(() => ({
     state: rules.createInitialState(settings),
     p1Plan: null,
     activeSlot: 1,

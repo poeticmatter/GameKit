@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { GameRules } from './types'
 import { deriveStatus } from './useAsyncMatch'
-import { commitPlan, type HotSeatProgress } from './useHotSeatMatch'
+import { commitPlan, type SoloPlaytestProgress } from './useSoloPlaytest'
 
 // Higher number wins the round.
 interface DuelState {
@@ -18,15 +18,15 @@ const duelRules: GameRules<null, DuelState, DuelPlan> = {
   resolveTurn: (state, p1, p2) => ({ turn: state.turn + 1, lastWinner: p1.value === p2.value ? null : p1.value > p2.value ? 1 : 2 }),
 }
 
-const start: HotSeatProgress<DuelState, DuelPlan> = {
+const start: SoloPlaytestProgress<DuelState, DuelPlan> = {
   state: duelRules.createInitialState(null),
   p1Plan: null,
   activeSlot: 1,
   isHandoffPending: false,
 }
 
-describe('hot-seat commits', () => {
-  it('hands the device to player 2 after player 1 commits', () => {
+describe('solo playtest commits', () => {
+  it('moves on to player 2 after player 1 commits', () => {
     const afterP1 = commitPlan(start, { turn: 1, value: 3 }, duelRules)
     expect(afterP1).toMatchObject({ activeSlot: 2, isHandoffPending: true })
   })

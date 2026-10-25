@@ -15,7 +15,7 @@ export interface GameConfig {
   id: string
   title: string
   tagline: string
-  /** Null when async play isn't configured; live and hot-seat play still work. */
+  /** Null when async play isn't configured; live play and solo playtests still work. */
   supabase: SupabaseConfig | null
 }
 

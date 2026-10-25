@@ -7,14 +7,14 @@ import { recallSlot, rememberRoomCreator } from './roles'
 import { HandoffScreen, WaitingForPartnerScreen } from './screens'
 import type { GameModule, MatchConnection, TurnBasedState, TurnPlan } from './types'
 import { useAsyncMatch } from './useAsyncMatch'
-import { useHotSeatMatch } from './useHotSeatMatch'
 import { usePeerGuest } from './usePeerGuest'
 import { usePeerHost } from './usePeerHost'
+import { useSoloPlaytest } from './useSoloPlaytest'
 
 /**
  * A whole simultaneous two-player game app: the lobby, then a match over whichever
  * transport was chosen, ending at the game's own Board. Routes on the URL
- * (`?room=CODE[&mode=async]`); hot-seat matches have no URL.
+ * (`?room=CODE[&mode=async]`); solo playtests have no URL.
  */
 
 interface AppProps<Settings, State extends TurnBasedState, Plan extends TurnPlan> {
@@ -88,25 +88,25 @@ function AsyncMatch<Settings, State extends TurnBasedState, Plan extends TurnPla
   return <MatchScreen {...props} connection={connection} />
 }
 
-function HotSeatMatch<Settings, State extends TurnBasedState, Plan extends TurnPlan>({
+function SoloPlaytestMatch<Settings, State extends TurnBasedState, Plan extends TurnPlan>({
   game,
   settings,
 }: {
   game: GameModule<Settings, State, Plan>
   settings: Settings
 }) {
-  const { connection, pendingHandoff, confirmHandoff } = useHotSeatMatch(game.rules, settings)
+  const { connection, pendingHandoff, confirmHandoff } = useSoloPlaytest(game.rules, settings)
   if (pendingHandoff !== null) return <HandoffScreen slot={pendingHandoff} onReady={confirmHandoff} />
   if (!connection.state) return <ProgressScreen title="Starting…" />
 
-  // Remount per player so one player's in-progress UI selection never shows to the other.
+  // Remount per player so one player's in-progress UI selection never carries over to the other.
   return (
     <GameBoard
       key={`${connection.state.turn}-${connection.role}`}
       game={game}
       state={connection.state}
       connection={connection}
-      seating="hot_seat"
+      seating="solo_playtest"
     />
   )
 }
@@ -125,15 +125,15 @@ export function SimultaneousGameApp<Settings, State extends TurnBasedState, Plan
     const link = readRoomLinkFromUrl()
     return link ? { link, settings: null } : null
   })
-  // Hot-seat matches live only in memory: they have no room and no URL to share or resume.
-  const [hotSeatSettings, setHotSeatSettings] = useState<Settings | null>(null)
+  // Solo playtests live only in memory: they have no room and no URL to share or resume.
+  const [playtestSettings, setPlaytestSettings] = useState<Settings | null>(null)
 
   const createMatch = useCallback(
     (settings: Settings, mode: PlayMode) => {
       // The Create button sits at the bottom of the lobby; start the match at the top.
       window.scrollTo(0, 0)
-      if (mode === 'hot_seat') {
-        setHotSeatSettings(settings)
+      if (mode === 'solo_playtest') {
+        setPlaytestSettings(settings)
         return
       }
       const link: RoomLink = { code: generateRoomCode(), transport: mode }
@@ -144,7 +144,7 @@ export function SimultaneousGameApp<Settings, State extends TurnBasedState, Plan
     [config.id],
   )
 
-  if (hotSeatSettings !== null) return <HotSeatMatch game={game} settings={hotSeatSettings} />
+  if (playtestSettings !== null) return <SoloPlaytestMatch game={game} settings={playtestSettings} />
   if (!room) return <Lobby config={config} game={game} onCreateMatch={createMatch} />
 
   const roomProps = { config, game, room: room.link }

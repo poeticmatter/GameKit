@@ -5,8 +5,8 @@ import { applyPlayerMove } from '../moveValidation'
 import type { GameRules, MatchSetup, PlayerIndex } from '../types'
 
 /**
- * Hot seat as a solo playtest: one person plays every seat of several tables of the same
- * game, on one device, with nothing saved online.
+ * The solo playtest: one person plays every seat of several tables of the same game, on
+ * one device, with nothing saved online.
  *
  * Each turn should be a fresh read of a board, not the continuation of a plan, so the
  * tester never knows where they're about to sit. Once they end a turn they're dealt

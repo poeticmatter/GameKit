@@ -1,5 +1,5 @@
 // What a browser remembers between visits: its seat in each room, the name it plays
-// under, and any hot-seat playtest in progress. Storage can be unavailable (private windows, blocked site data), so reads fall
+// under, and any solo playtest in progress. Storage can be unavailable (private windows, blocked site data), so reads fall
 // back to "nothing remembered" and writes are best effort; both log why.
 
 export const MAX_PLAYER_NAME_LENGTH = 24

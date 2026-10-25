@@ -14,12 +14,12 @@ export function WaitingForPartnerScreen({ room }: { room: RoomLink }) {
   )
 }
 
-/** Hides the board between hot-seat inputs so the next player can't see the last one's. */
+/** Sits between a solo playtest's plans, so the tester knows whose plan comes next. */
 export function HandoffScreen({ slot, onReady }: { slot: PlayerSlot; onReady: () => void }) {
   return (
     <CenteredScreen>
-      <h2 className="text-2xl font-semibold">Pass the device to Player {slot}</h2>
-      <p className="text-sm text-ink-soft">Player {slot}, press Ready when the other player isn't looking.</p>
+      <h2 className="text-2xl font-semibold">Next: Player {slot}</h2>
+      <p className="text-sm text-ink-soft">Press Ready to plan Player {slot}’s turn.</p>
       <Button onClick={onReady} className="px-8 py-3 text-lg">
         Ready
       </Button>

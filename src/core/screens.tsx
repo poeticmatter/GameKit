@@ -55,7 +55,7 @@ export function ShareLink({ room }: { room: RoomLink }) {
   )
 }
 
-const PLAY_MODES: PlayMode[] = ['async', 'live', 'hot_seat']
+const PLAY_MODES: PlayMode[] = ['async', 'live', 'solo_playtest']
 
 const PLAY_MODE_TEXT: Record<PlayMode, { label: string; description: string }> = {
   async: {
@@ -66,9 +66,9 @@ const PLAY_MODE_TEXT: Record<PlayMode, { label: string; description: string }> =
     label: 'Live',
     description: 'Everyone plays at the same time over direct peer-to-peer links. The game ends if the host closes the tab.',
   },
-  hot_seat: {
-    label: 'Hot Seat',
-    description: 'Every seat is played on this device. Nothing is saved online.',
+  solo_playtest: {
+    label: 'Solo Playtest',
+    description: 'Playtest alone by playing every seat yourself on this device. Nothing is saved online.',
   },
 }
 

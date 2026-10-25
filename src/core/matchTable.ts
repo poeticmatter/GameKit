@@ -10,7 +10,7 @@ export interface MatchTable {
 
 let cachedClient: { config: SupabaseConfig; client: SupabaseClient } | null = null
 
-/** One client per page, created on first use so live and hot-seat play never touch Supabase. */
+/** One client per page, created on first use so live play and solo playtests never touch Supabase. */
 function clientFor(config: SupabaseConfig): SupabaseClient {
   if (cachedClient?.config.url !== config.url || cachedClient.config.anonKey !== config.anonKey) {
     cachedClient = { config, client: createClient(config.url, config.anonKey) }

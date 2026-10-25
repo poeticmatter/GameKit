@@ -42,7 +42,7 @@ describe('turn-based join screen', () => {
 })
 
 describe('simultaneous handoff', () => {
-  it('names the player taking the device', () => {
-    expect(renderToStaticMarkup(<HandoffScreen slot={2} onReady={() => {}} />)).toContain('Pass the device to Player 2')
+  it('names the player whose plan comes next', () => {
+    expect(renderToStaticMarkup(<HandoffScreen slot={2} onReady={() => {}} />)).toContain('Next: Player 2')
   })
 })

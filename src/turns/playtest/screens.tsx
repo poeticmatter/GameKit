@@ -36,7 +36,7 @@ function TurnButtons({ appearance, ...actions }: TurnControls) {
 }
 
 /**
- * Sits above a hot-seat table: the turn's controls while one is dealt, and a way out of
+ * Sits above a playtest table: the turn's controls while one is dealt, and a way out of
  * the playtest at any point.
  */
 export function PlaytestBar({
@@ -54,7 +54,7 @@ export function PlaytestBar({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-rule bg-paper px-4 py-2 text-sm">
-      <span className="font-semibold text-ink-soft">Hot-seat playtest</span>
+      <span className="font-semibold text-ink-soft">Solo playtest</span>
       {turn && <TurnButtons {...turn} />}
       {strategyNote && (
         <p className="min-w-0 flex-1 truncate text-ink-soft" title={strategyNote}>
@@ -84,7 +84,7 @@ export function StrategyNote({ note, label }: { note: string; label: string }) {
   )
 }
 
-/** Sits under a hot-seat table that just finished, which is shown with its real seats. */
+/** Sits under a playtest table that just finished, which is shown with its real seats. */
 export function TableOverBar({
   openTableCount,
   onNextTurn,
@@ -130,7 +130,7 @@ export class PlaytestErrorBoundary extends Component<ErrorBoundaryProps, { error
   }
 
   componentDidCatch(error: unknown): void {
-    console.error('The hot-seat playtest failed to render; offering to discard it.', error)
+    console.error('The solo playtest failed to render; offering to discard it.', error)
   }
 
   render() {

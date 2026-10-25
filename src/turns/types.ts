@@ -49,7 +49,7 @@ export interface GameRules<Settings, State, Move> {
   /** Applies the active player's move. Throws IllegalMoveError if it breaks the rules. */
   applyMove(state: State, move: Move): State
   /**
-   * How a finished game ended, for the hot-seat playtest summary. Only called once
+   * How a finished game ended, for the solo playtest summary. Only called once
    * activePlayer is null; without it the summary can't name winners.
    */
   outcome?(state: State): GameOutcome
@@ -98,7 +98,7 @@ export interface BoardProps<State, Move> {
   seating: Seating
   /**
    * The seat whose look (colours, pieces) to draw a seat with. Every seat looks like
-   * itself online; in a hot-seat playtest the seat being played looks like seat 0 and
+   * itself online; in a solo playtest the seat being played looks like seat 0 and
    * the rest are shuffled, so draw every seat-coloured thing through this.
    */
   lookOf: (seat: PlayerIndex) => PlayerIndex

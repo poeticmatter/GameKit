@@ -17,13 +17,13 @@ npm pack         # tarball for trying a change in a game before releasing
 ## Layout
 
 - `src/core/`: shared by both modes and never imported by games directly.
-  - `config.ts` (`GameConfig`, table naming), `matchTable.ts` (Supabase client per page), `roomLink.ts` (codes, URLs, `Seating`/`PlayMode`), `browserMemory.ts` (localStorage with fallbacks), `random.ts` (seeded Mulberry32 and shuffle), `seatDisguise.ts` (which seat's look each seat wears in a hot-seat playtest).
+  - `config.ts` (`GameConfig`, table naming), `matchTable.ts` (Supabase client per page), `roomLink.ts` (codes, URLs, `Seating`/`PlayMode`), `browserMemory.ts` (localStorage with fallbacks), `random.ts` (seeded Mulberry32 and shuffle), `seatDisguise.ts` (which seat's look each seat wears in a solo playtest).
   - `useRoomRow.ts`: keeps an async room's row on screen: Realtime, catch-up on focus and on a slow poll, never showing an older version than it has.
   - `useHostPeer.ts` / `useHostLink.ts`: the PeerJS host and guest connection lifecycles (the guest reconnects with backoff).
   - `controls.tsx`, `screens.tsx` (status screens, share link, lobby frame, play-mode picker), `useTurnTitle.ts`.
 - `src/simultaneous/`: two players, plans committed at the same time (`resolveTurn`). Type names match the original game-template platform so older games can switch by changing imports. Async rows have `turn`, `p1_plan`, `p2_plan`, `p2_joined`.
 - `src/turns/`: 2–N players in turn order (`activePlayer` / `applyMove`, `IllegalMoveError`). A player's turn is a draft on their screen (`turnDraft.ts`, `useTurnDraft.ts`, `TurnBar.tsx`) until they end it, and `irreversibleReason` marks moves that can't be undone. Async rows have `players`, `player_count`, `state`, `version`; seats are claimed through the `<id>_claim_seat` RPC.
-  - `playtest/`: hot seat is a solo playtest. `session.ts` deals turns across several tables with the played seat disguised as seat 0 (boards draw seats through `BoardProps.lookOf`); `summary.ts` reads results by turn position via the optional `GameRules.outcome`; `storage.ts` keeps the playtest in localStorage so a reload resumes it.
+  - `playtest/`: the solo playtest (`'solo_playtest'`), one tester playing every seat. `session.ts` deals turns across several tables with the played seat disguised as seat 0 (boards draw seats through `BoardProps.lookOf`); `summary.ts` reads results by turn position via the optional `GameRules.outcome`; `storage.ts` keeps the playtest in localStorage so a reload resumes it.
 - Each mode's `index.ts` is its public API, re-exporting the core pieces games use (`GameConfig`, `supabaseFromEnv`, controls, `nextRandom`/`nextIndex`, `Seating`). `src/theme.css` is the third export.
 
 ## Rules

@@ -47,7 +47,7 @@ interface SoloPlaytestOptions<Settings, State, Move> {
   initialSession: SoloPlaytest<State>
 }
 
-/** Runs a hot-seat playtest, saving it after every change so a reload resumes it. */
+/** Runs a solo playtest, saving it after every change so a reload resumes it. */
 export function useSoloPlaytest<Settings, State, Move>({
   game: { rules, playerAppearance },
   gameId,

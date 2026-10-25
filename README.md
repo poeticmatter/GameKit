@@ -1,6 +1,6 @@
 # GameKit
 
-The multiplayer platform shared by the [game lab](https://poeticmatter.github.io/game-lab/)'s games: the lobby, room links, async play over Supabase, live play over PeerJS, hot seat, and the screens in between. A game supplies its rules and board; GameKit does the rest.
+The multiplayer platform shared by the [game lab](https://poeticmatter.github.io/game-lab/)'s games: the lobby, room links, async play over Supabase, live play over PeerJS, a solo playtest on one device, and the screens in between. A game supplies its rules and board; GameKit does the rest.
 
 Two kinds of game, two entry points:
 
@@ -54,9 +54,9 @@ test: { server: { deps: { inline: ['game-kit'] } } },   // with defineConfig fro
 
 The Supabase table each mode expects is defined by the matching template's `supabase/migrations/`.
 
-## Hot seat is a solo playtest
+## Solo playtest
 
-In turn-based games, hot seat is built for playtesting alone, so it keeps the tester from carrying a plan from one turn to the next. (Simultaneous games still pass one device between two players.)
+The lobby's third play mode, **Solo Playtest** (`'solo_playtest'`, both as the `PlayMode` and as the `Seating` a board gets), is one tester playing every seat on one device. In simultaneous games the tester enters both players' plans, with a screen between them naming whose comes next. Turn-based games go further, so the tester can't carry a plan from one turn to the next:
 
 - The lobby asks for 1–4 **tables**: separate games with the same settings and player count, each with its own seed.
 - When the dealt seat's turn has passed, the tester presses **End turn** and is dealt straight into a random unfinished table, sometimes the same one again. Until then **Undo** takes back the turn's moves one at a time, except moves that can't be undone (see below).
@@ -67,11 +67,11 @@ In turn-based games, hot seat is built for playtesting alone, so it keeps the te
 
 Winners and scores come from the optional `GameRules.outcome(state)`, called only once `activePlayer` is null; without it the summary still shows turn order. Game states are saved as JSON, which they already must be for async play.
 
-A board takes part through `BoardProps.lookOf`: draw every seat-coloured thing (pieces, swatches, colour names) with `lookOf(seat)` instead of `seat`, and take names from `players`, which hot seat names after each seat's look. Online, `lookOf(seat)` is just `seat`. Anything else ordered by seat, such as a scoreboard in seat order, still gives the seat away; list players starting from the viewer's seat instead.
+A board takes part through `BoardProps.lookOf`: draw every seat-coloured thing (pieces, swatches, colour names) with `lookOf(seat)` instead of `seat`, and take names from `players`, which the solo playtest names after each seat's look. Online, `lookOf(seat)` is just `seat`. Anything else ordered by seat, such as a scoreboard in seat order, still gives the seat away; list players starting from the viewer's seat instead.
 
 ## Undo and End turn
 
-Hot seat, async and live play all take a turn the same way. The player's moves stay on their own screen, where **Undo** takes them back one at a time, until play has passed to someone else and they press **End turn**. Then the whole turn is sent at once: one write to the database in async play, one message to the host in live play. Everyone else keeps seeing the state as it was after the last turn that was sent. A draft is kept only in memory, so a reload during a turn drops the moves not yet sent.
+The solo playtest, async and live play all take a turn the same way. The player's moves stay on their own screen, where **Undo** takes them back one at a time, until play has passed to someone else and they press **End turn**. Then the whole turn is sent at once: one write to the database in async play, one message to the host in live play. Everyone else keeps seeing the state as it was after the last turn that was sent. A draft is kept only in memory, so a reload during a turn drops the moves not yet sent.
 
 A game can mark moves that can't be undone, by drawing at random for example: if a player could see the draw, undo and choose differently, they would be peeking, and a seeded draw would just come out the same when replayed. Give `GameRules` the optional
 
@@ -79,7 +79,7 @@ A game can mark moves that can't be undone, by drawing at random for example: if
 irreversibleReason(state, move): string | null
 ```
 
-and return a message for such a move. Before playing it the kit pauses the game with a warning that shows the message, and if the player goes ahead it sends the turn so far at once, so nothing before the move can be undone, even by reloading. For a move the rules reject it can throw `IllegalMoveError` or return null. Hot seat asks and counts the move the same way.
+and return a message for such a move. Before playing it the kit pauses the game with a warning that shows the message, and if the player goes ahead it sends the turn so far at once, so nothing before the move can be undone, even by reloading. For a move the rules reject it can throw `IllegalMoveError` or return null. The solo playtest asks and counts the move the same way.
 
 Transports submit a whole turn with `MatchConnection.submitMoves(moves)`, which applies the moves in order, or none of them if one is refused. Live guests send a `TURN` message carrying the version it was made on; a host that refuses it sends the guest a snapshot so it catches up.
 

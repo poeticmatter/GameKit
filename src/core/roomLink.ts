@@ -1,14 +1,14 @@
 /** How the players of an online match are connected. */
 export type Transport = 'live' | 'async'
 
-/** What the lobby offers: an online transport, or everyone sharing one device. */
-export type PlayMode = Transport | 'hot_seat'
+/** What the lobby offers: an online transport, or a solo playtest on this device. */
+export type PlayMode = Transport | 'solo_playtest'
 
 /**
- * Who is looking at the board. In a hot-seat match everyone reads the same screen, so
- * the board should name players rather than calling one of them "You".
+ * Who is looking at the board. In a solo playtest one person plays every seat, so the
+ * board should name players rather than calling one of them "You".
  */
-export type Seating = 'remote' | 'hot_seat'
+export type Seating = 'remote' | 'solo_playtest'
 
 export interface RoomLink {
   code: string

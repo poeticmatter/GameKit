@@ -1,7 +1,7 @@
 import { readStored, removeStored, writeStored } from '../../core/browserMemory'
 import type { SoloPlaytest, SoloStage } from './session'
 
-// The hot-seat playtest in progress is kept in localStorage, one per game, so a reload
+// The solo playtest in progress is kept in localStorage, one per game, so a reload
 // carries on where it left off. Game states go in as JSON, as they already do for async
 // play.
 

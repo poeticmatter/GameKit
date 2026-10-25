@@ -70,7 +70,7 @@ function PlaytestScreens<Settings, State, Move>({ gameId, game, initialSession }
         role={playtest.role}
         players={playtest.players}
         onMove={playtest.submitMove}
-        seating="hot_seat"
+        seating="solo_playtest"
         lookOf={playtest.lookOf}
       />
       {isTableOver && (
@@ -85,7 +85,7 @@ function endPlaytest(gameId: string) {
   returnToLobby()
 }
 
-/** A hot-seat playtest from its first deal to its summary, resumable after a reload. */
+/** A solo playtest from its first deal to its summary, resumable after a reload. */
 export function SoloPlaytestMatch<Settings, State, Move>(props: PlaytestProps<Settings, State, Move>) {
   return (
     <PlaytestErrorBoundary onDiscard={() => endPlaytest(props.gameId)}>

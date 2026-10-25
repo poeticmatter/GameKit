@@ -10,11 +10,11 @@ export interface MatchRequest<Settings> {
   settings: Settings
   playerCount: number
   mode: PlayMode
-  /** The creator's name; empty for hot seat. */
+  /** The creator's name; empty for a solo playtest. */
   hostName: string
-  /** Hot seat only: how many tables of the game to deal turns from. */
+  /** Solo playtest only: how many tables of the game to deal turns from. */
   tableCount: number
-  /** Hot seat only: how the tester means to play every seat; may be empty. */
+  /** Solo playtest only: how the tester means to play every seat; may be empty. */
   strategyNote: string
 }
 
@@ -44,7 +44,7 @@ export function Lobby<Settings>({
   const [name, setName] = useState(() => recallPlayerName(config.id))
   const [tableCount, setTableCount] = useState(DEFAULT_TABLE_COUNT)
   const [strategyNote, setStrategyNote] = useState('')
-  const isOnline = mode !== 'hot_seat'
+  const isOnline = mode !== 'solo_playtest'
   const { SettingsForm } = game
 
   function create() {

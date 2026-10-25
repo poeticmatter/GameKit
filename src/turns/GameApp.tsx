@@ -21,7 +21,7 @@ import { useTurnDraft } from './useTurnDraft'
 /**
  * A whole turn-based game app: the lobby, then a match over whichever transport was
  * chosen, ending at the game's own Board. Routes on the URL (`?room=CODE[&mode=async]`);
- * hot-seat playtests have no URL and resume from this browser's storage instead.
+ * solo playtests have no URL and resume from this browser's storage instead.
  */
 
 interface AppProps<Settings, State, Move> {
@@ -106,7 +106,7 @@ export function TurnBasedGameApp<Settings, State, Move>({ config, game }: AppPro
     const link = readRoomLinkFromUrl()
     return link ? { link, newMatch: null } : null
   })
-  // Hot-seat playtests have no room or URL; the one in progress is kept in this browser.
+  // Solo playtests have no room or URL; the one in progress is kept in this browser.
   const [playtest, setPlaytest] = useState<SoloPlaytest<State> | null>(() =>
     readRoomLinkFromUrl() ? null : loadPlaytest<State>(config.id),
   )
@@ -117,7 +117,7 @@ export function TurnBasedGameApp<Settings, State, Move>({ config, game }: AppPro
       const newSetup = (): MatchSetup<Settings> => ({ settings, playerCount, seed: generateSeed() })
       // The Create button sits at the bottom of the lobby; start the match at the top.
       window.scrollTo(0, 0)
-      if (mode === 'hot_seat') {
+      if (mode === 'solo_playtest') {
         const setups = Array.from({ length: tableCount }, newSetup)
         setPlaytest(startSoloPlaytest(game.rules, { setups, strategyNote, randomState: generateSeed() }))
         return

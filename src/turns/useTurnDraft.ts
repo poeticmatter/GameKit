@@ -26,8 +26,9 @@ export interface DraftedTurn<State, Move> {
 type Connection<State, Move> = Pick<MatchConnection<State, Move>, 'state' | 'role' | 'status' | 'submitMoves'>
 
 /**
- * Turns an online connection into hot seat's way of playing: the player's moves stay on
- * their screen, undoable, until they end their turn, when all of them are sent together.
+ * Turns an online connection into the solo playtest's way of playing: the player's moves
+ * stay on their screen, undoable, until they end their turn, when all of them are sent
+ * together.
  * A move that can't be undone (see GameRules.irreversibleReason) first asks the player,
  * then sends the turn so far at once, so it can't be taken back by reloading either.
  */
